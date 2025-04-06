@@ -27,7 +27,7 @@ import (
 
 func main() {
 	// 加载配置
-	configFilePath := "polaris-console.yaml"
+	configFilePath := "pole-console.yaml"
 	config, err := bootstrap.LoadConfig(configFilePath)
 	if err != nil {
 		fmt.Printf("[ERROR] loadConfig fail\n")

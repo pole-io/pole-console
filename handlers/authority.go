@@ -55,7 +55,7 @@ func checkAuthoration(ctx *gin.Context, conf *bootstrap.Config) bool {
 		return false
 	}
 
-	reqUrl := fmt.Sprintf("http://%s%s?id=%s", conf.PolarisServer.Address, conf.WebServer.AuthURL+"/user/token", userId)
+	reqUrl := fmt.Sprintf("http://%s%s?id=%s", conf.PoleServer.Address, conf.WebServer.AuthURL+"/user/token", userId)
 	req, err := http.NewRequest(http.MethodGet, reqUrl, nil)
 	if err != nil {
 		log.Error("create query user's token req fail", zap.Error(err), zap.String("user-id", userId))

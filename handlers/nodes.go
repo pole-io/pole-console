@@ -31,21 +31,20 @@ import (
 	"github.com/polarismesh/polaris-console/common/model"
 )
 
-func DescribeServerNodes(polarisServer *bootstrap.PolarisServer, conf *bootstrap.Config) gin.HandlerFunc {
+func DescribeServerNodes(PoleServer *bootstrap.PoleServer, conf *bootstrap.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !verifyAccessPermission(c, conf) {
 			return
 		}
 
-		c.Request.Header.Add("Polaris-Token", polarisServer.PolarisToken)
 		c.Request.Header.Del("Cookie")
 
 		director := func(req *http.Request) {
 			req.URL.Scheme = "http"
-			req.URL.Host = polarisServer.Address
+			req.URL.Host = PoleServer.Address
 			req.URL.Path = "/naming/v1/instances"
 			req.URL.RawQuery = "limit=10&offset=0&namespace=Polaris&service=polaris.checker"
-			req.Host = polarisServer.Address
+			req.Host = PoleServer.Address
 		}
 
 		modifyResp := func(resp *http.Response) error {

@@ -61,7 +61,7 @@ func (a *AdminUserGetter) GetAdminInfo() (*security.User, error) {
 		return a.user, nil
 	}
 
-	resp, err := http.Get(fmt.Sprintf("http://%s/maintain/v1/mainuser/exist", a.conf.PolarisServer.Address))
+	resp, err := http.Get(fmt.Sprintf("http://%s/maintain/v1/mainuser/exist", a.conf.PoleServer.Address))
 	if err != nil || resp.StatusCode != http.StatusOK {
 		user := &security.User{
 			Name: wrapperspb.String(a.conf.WebServer.MainUser),
@@ -99,15 +99,14 @@ type LoginRequest struct {
 }
 
 // ReverseProxyForLogin 反向代理
-func ReverseProxyForLogin(polarisServer *bootstrap.PolarisServer, conf *bootstrap.Config) gin.HandlerFunc {
+func ReverseProxyForLogin(PoleServer *bootstrap.PoleServer, conf *bootstrap.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Request.Header.Add("Polaris-Token", polarisServer.PolarisToken)
 		c.Request.Header.Del("Cookie")
 
 		director := func(req *http.Request) {
 			req.URL.Scheme = "http"
-			req.URL.Host = polarisServer.Address
-			req.Host = polarisServer.Address
+			req.URL.Host = PoleServer.Address
+			req.Host = PoleServer.Address
 			body, err := ioutil.ReadAll(req.Body)
 			if err != nil {
 				log.Error("[Proxy][Login] modify login request fail", zap.Error(err))
@@ -170,19 +169,18 @@ func ReverseProxyForLogin(polarisServer *bootstrap.PolarisServer, conf *bootstra
 }
 
 // ReverseProxyForServer 反向代理
-func ReverseProxyForServer(polarisServer *bootstrap.PolarisServer, conf *bootstrap.Config) gin.HandlerFunc {
+func ReverseProxyForServer(PoleServer *bootstrap.PoleServer, conf *bootstrap.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !verifyAccessPermission(c, conf) {
 			return
 		}
 
-		c.Request.Header.Add("Polaris-Token", polarisServer.PolarisToken)
 		c.Request.Header.Del("Cookie")
 
 		director := func(req *http.Request) {
 			req.URL.Scheme = "http"
-			req.URL.Host = polarisServer.Address
-			req.Host = polarisServer.Address
+			req.URL.Host = PoleServer.Address
+			req.Host = PoleServer.Address
 		}
 		proxy := &httputil.ReverseProxy{Director: director}
 		proxy.ServeHTTP(c.Writer, c.Request)
@@ -219,15 +217,14 @@ func verifyAccessPermission(c *gin.Context, conf *bootstrap.Config) bool {
 }
 
 // ReverseProxyNoAuthForServer 反向代理
-func ReverseProxyNoAuthForServer(polarisServer *bootstrap.PolarisServer, conf *bootstrap.Config) gin.HandlerFunc {
+func ReverseProxyNoAuthForServer(PoleServer *bootstrap.PoleServer, conf *bootstrap.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Request.Header.Add("Polaris-Token", polarisServer.PolarisToken)
 		c.Request.Header.Del("Cookie")
 
 		director := func(req *http.Request) {
 			req.URL.Scheme = "http"
-			req.URL.Host = polarisServer.Address
-			req.Host = polarisServer.Address
+			req.URL.Host = PoleServer.Address
+			req.Host = PoleServer.Address
 		}
 		proxy := &httputil.ReverseProxy{Director: director}
 		proxy.ServeHTTP(c.Writer, c.Request)

@@ -28,11 +28,11 @@ func MetricsRouter(webSvr *gin.Engine, config *bootstrap.Config) {
 	// 后端server路由组
 	v1 := webSvr.Group("/metrics/v1")
 	v1.GET("/labels", handlers.DescribeMetricLabels())
-	v1.GET("/server/interfaces", handlers.DescribeRequestInterface(&config.PolarisServer, config))
-	v1.GET("/server/nodes", handlers.DescribeServerNodes(&config.PolarisServer, config))
-	v1.GET("/services", handlers.DescribeServicesMetric(&config.PolarisServer, config))
-	v1.GET("/services/interfaces", handlers.DescribeServiceInterfacesMetric(&config.PolarisServer, config))
-	v1.GET("/services/instances", handlers.DescribeServiceInstancesMetric(&config.PolarisServer, config))
-	v1.GET("/callers", handlers.DescribeServiceCallerMetric(&config.PolarisServer, config))
+	v1.GET("/server/interfaces", handlers.DescribeRequestInterface(&config.PoleServer, config))
+	v1.GET("/server/nodes", handlers.DescribeServerNodes(&config.PoleServer, config))
+	v1.GET("/services", handlers.DescribeServicesMetric(&config.PoleServer, config))
+	v1.GET("/services/interfaces", handlers.DescribeServiceInterfacesMetric(&config.PoleServer, config))
+	v1.GET("/services/instances", handlers.DescribeServiceInstancesMetric(&config.PoleServer, config))
+	v1.GET("/callers", handlers.DescribeServiceCallerMetric(&config.PoleServer, config))
 	v1.GET("/services/instances/list", handlers.DescribeServiceInstances(config))
 }
