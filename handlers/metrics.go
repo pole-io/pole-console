@@ -70,16 +70,15 @@ func DescribeMetricLabels() gin.HandlerFunc {
 	}
 }
 
-func DescribeRequestInterface(polarisServer *bootstrap.PolarisServer, conf *bootstrap.Config) gin.HandlerFunc {
+func DescribeRequestInterface(PoleServer *bootstrap.PoleServer, conf *bootstrap.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Request.Header.Add("Polaris-Token", polarisServer.PolarisToken)
 		c.Request.Header.Del("Cookie")
 
 		director := func(req *http.Request) {
 			req.URL.Scheme = "http"
-			req.URL.Host = polarisServer.Address
+			req.URL.Host = PoleServer.Address
 			req.URL.Path = "/apidocs.json"
-			req.Host = polarisServer.Address
+			req.Host = PoleServer.Address
 			req.RequestURI = "/apidocs.json"
 		}
 		modifyResp := func(resp *http.Response) error {
@@ -137,7 +136,7 @@ func DescribeRequestInterface(polarisServer *bootstrap.PolarisServer, conf *boot
 }
 
 // DescribeServicesMetric 查询服务级别监控指标列表视图
-func DescribeServicesMetric(polarisServer *bootstrap.PolarisServer, conf *bootstrap.Config) gin.HandlerFunc {
+func DescribeServicesMetric(PoleServer *bootstrap.PoleServer, conf *bootstrap.Config) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		namespace := ctx.Query("namespace")
 
@@ -387,7 +386,7 @@ func describeServiceMetricsRequestTimeout(conf *bootstrap.Config, namespace, sta
 }
 
 // DescribeServiceInterfacesMetric 查询服务下接口级别监控指标列表视图
-func DescribeServiceInterfacesMetric(polarisServer *bootstrap.PolarisServer, conf *bootstrap.Config) gin.HandlerFunc {
+func DescribeServiceInterfacesMetric(PoleServer *bootstrap.PoleServer, conf *bootstrap.Config) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		namespace := ctx.Query("namespace")
 		service := ctx.Query("service")
@@ -674,7 +673,7 @@ func describeServiceInterfaceMetricsRequestTimeout(conf *bootstrap.Config, names
 }
 
 // DescribeServiceInstancesMetric 查询服务下实例级别监控指标列表视图
-func DescribeServiceInstancesMetric(polarisServer *bootstrap.PolarisServer, conf *bootstrap.Config) gin.HandlerFunc {
+func DescribeServiceInstancesMetric(PoleServer *bootstrap.PoleServer, conf *bootstrap.Config) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		namespace := ctx.Query("namespace")
 		service := ctx.Query("service")
@@ -926,7 +925,7 @@ func describeServiceInstanceRequestTotal(conf *bootstrap.Config, service, namesp
 }
 
 // DescribeServiceCallerMetric 查询服务调用者级别监控指标列表视图
-func DescribeServiceCallerMetric(polarisServer *bootstrap.PolarisServer, conf *bootstrap.Config) gin.HandlerFunc {
+func DescribeServiceCallerMetric(PoleServer *bootstrap.PoleServer, conf *bootstrap.Config) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		namespace := ctx.Query("callee_namespace")
 		service := ctx.Query("callee_service")
@@ -1177,12 +1176,12 @@ func listAllService(ctx *gin.Context, conf *bootstrap.Config, namespace string) 
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s%s/services/all?namespace="+namespace, conf.PolarisServer.Address, conf.WebServer.NamingV1URL), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s%s/services/all?namespace="+namespace, conf.PoleServer.Address, conf.WebServer.NamingURL), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Add("X-Polaris-Token", token)
+	req.Header.Add("Authorization", token)
 	req.Header.Add("X-Polaris-User", userID)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -1222,7 +1221,7 @@ func sendDiscoverRequest(ctx *gin.Context, conf *bootstrap.Config, namespace,
 
 	data, _ := json.Marshal(req)
 
-	resp, err := http.Post(fmt.Sprintf("http://%s/v1/Discover", conf.PolarisServer.Address), "application/json", bytes.NewBuffer(data))
+	resp, err := http.Post(fmt.Sprintf("http://%s/v1/Discover", conf.PoleServer.Address), "application/json", bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
 	}

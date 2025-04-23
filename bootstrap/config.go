@@ -32,16 +32,9 @@ var (
 	_globalConfig *Config
 )
 
-// StaffDepartment 回复请求
-type StaffDepartment struct {
-	Name       string `json:"ChnName"`
-	Department string `json:"DeptNameString"`
-}
-
-// PolarisServer polaris server配置
-type PolarisServer struct {
-	Address      string `yaml:"address"`
-	PolarisToken string `yaml:"polarisToken"`
+// PoleServer polaris server配置
+type PoleServer struct {
+	Address string `yaml:"address"`
 }
 
 type MonitorServer struct {
@@ -52,7 +45,7 @@ type MonitorServer struct {
 type Config struct {
 	Logger        log.Options   `yaml:"logger"`
 	WebServer     WebServer     `yaml:"webServer"`
-	PolarisServer PolarisServer `yaml:"polarisServer"`
+	PoleServer    PoleServer    `yaml:"poleServer"`
 	MonitorServer MonitorServer `yaml:"monitorServer"`
 	Futures       string        `yaml:"futures"`
 }
@@ -66,8 +59,8 @@ type WebServer struct {
 	Mode        string `yaml:"mode"`
 	ListenIP    string `yaml:"listenIP"`
 	ListenPort  int    `yaml:"listenPort"`
-	NamingV1URL string `yaml:"namingV1URL"`
-	NamingV2URL string `yaml:"namingV2URL"`
+	CoreURL     string `yaml:"coreURL"`
+	NamingURL string `yaml:"namingURL"`
 	AuthURL     string `yaml:"authURL"`
 	MonitorURL  string `yaml:"monitorURL"`
 	ConfigURL   string `yaml:"configURL"`

@@ -45,7 +45,7 @@ type GetUserTokenResponse struct {
 // checkAuthoration 检查访问 token 是否合法
 func checkAuthoration(ctx *gin.Context, conf *bootstrap.Config) bool {
 	userId := ctx.Request.Header.Get("x-polaris-user")
-	accessToken := ctx.Request.Header.Get("x-polaris-token")
+	accessToken := ctx.Request.Header.Get("Authorization")
 	if userId == "" {
 		log.Error("denied request to server because user-id is empty")
 		return false
@@ -55,13 +55,13 @@ func checkAuthoration(ctx *gin.Context, conf *bootstrap.Config) bool {
 		return false
 	}
 
-	reqUrl := fmt.Sprintf("http://%s%s?id=%s", conf.PolarisServer.Address, conf.WebServer.AuthURL+"/user/token", userId)
+	reqUrl := fmt.Sprintf("http://%s%s?id=%s", conf.PoleServer.Address, conf.WebServer.AuthURL+"/user/token", userId)
 	req, err := http.NewRequest(http.MethodGet, reqUrl, nil)
 	if err != nil {
 		log.Error("create query user's token req fail", zap.Error(err), zap.String("user-id", userId))
 		return false
 	}
-	req.Header.Set("x-polaris-token", accessToken)
+	req.Header.Set("Authorization", accessToken)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Error("do request to get user token fail", zap.Error(err))

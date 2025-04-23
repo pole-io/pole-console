@@ -35,15 +35,14 @@ import (
 	"go.uber.org/zap"
 )
 
-func ReverseHandleBootstrap(polarisServer *bootstrap.PolarisServer, conf *bootstrap.Config) gin.HandlerFunc {
+func ReverseHandleBootstrap(poleServer *bootstrap.PoleServer, conf *bootstrap.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Request.Header.Add("Polaris-Token", polarisServer.PolarisToken)
 		c.Request.Header.Del("Cookie")
 
 		director := func(req *http.Request) {
 			req.URL.Scheme = "http"
-			req.URL.Host = polarisServer.Address
-			req.Host = polarisServer.Address
+			req.URL.Host = poleServer.Address
+			req.Host = poleServer.Address
 		}
 		proxy := &httputil.ReverseProxy{Director: director, ModifyResponse: func(resp *http.Response) error {
 			if resp.StatusCode != http.StatusNotFound {
@@ -52,12 +51,7 @@ func ReverseHandleBootstrap(polarisServer *bootstrap.PolarisServer, conf *bootst
 			if err := resp.Body.Close(); err != nil {
 				return err
 			}
-			body := []byte(`
-			{
-				"code": 200000,
-				"info": "success",
-			}
-			`)
+			body := []byte(`{"code": 200000,"info": "success"}`)
 			resp.StatusCode = http.StatusOK
 			resp.Header["Content-Length"] = []string{fmt.Sprint(len(body))}
 			resp.Body = io.NopCloser(bytes.NewReader(body))
@@ -68,9 +62,8 @@ func ReverseHandleBootstrap(polarisServer *bootstrap.PolarisServer, conf *bootst
 }
 
 // ReverseHandleAdminUserExist 反向代理
-func ReverseHandleAdminUserExist(polarisServer *bootstrap.PolarisServer, conf *bootstrap.Config) gin.HandlerFunc {
+func ReverseHandleAdminUserExist(polarisServer *bootstrap.PoleServer, conf *bootstrap.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Request.Header.Add("Polaris-Token", polarisServer.PolarisToken)
 		c.Request.Header.Del("Cookie")
 
 		director := func(req *http.Request) {
@@ -78,26 +71,33 @@ func ReverseHandleAdminUserExist(polarisServer *bootstrap.PolarisServer, conf *b
 			req.URL.Host = polarisServer.Address
 			req.Host = polarisServer.Address
 		}
-		proxy := &httputil.ReverseProxy{Director: director, ModifyResponse: func(resp *http.Response) error {
-			if resp.StatusCode == http.StatusNotFound {
-				if err := resp.Body.Close(); err != nil {
-					return err
+		proxy := &httputil.ReverseProxy{Director: director,
+			ErrorHandler: func(resp http.ResponseWriter, _ *http.Request, _ error) {
+				owner := "polaris"
+				if conf.WebServer.MainUser != "" {
+					owner = conf.WebServer.MainUser
 				}
-				body := []byte(`
-				{
-					"code": 200000,
-					"info": "success",
-					"user": {
-					    "name": "polaris"
+				body := []byte(`{"code":200000,"info":"success","user":{"name":"` + owner + `"}}`)
+				resp.Header().Set("Content-Type", "application/json")
+				resp.WriteHeader(http.StatusOK)
+				_, _ = resp.Write(body)
+			},
+			ModifyResponse: func(resp *http.Response) error {
+				if resp.StatusCode != http.StatusOK {
+					if err := resp.Body.Close(); err != nil {
+						return err
 					}
+					owner := "polaris"
+					if conf.WebServer.MainUser != "" {
+						owner = conf.WebServer.MainUser
+					}
+					body := []byte(`{"code":200000,"info":"success","user":{"name":"` + owner + `"}}`)
+					resp.StatusCode = http.StatusOK
+					resp.Header["Content-Length"] = []string{fmt.Sprint(len(body))}
+					resp.Body = io.NopCloser(bytes.NewReader(body))
 				}
-				`)
-				resp.StatusCode = http.StatusOK
-				resp.Header["Content-Length"] = []string{fmt.Sprint(len(body))}
-				resp.Body = io.NopCloser(bytes.NewReader(body))
-			}
-			return nil
-		}}
+				return nil
+			}}
 		proxy.ServeHTTP(c.Writer, c.Request)
 	}
 }
