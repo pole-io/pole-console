@@ -275,7 +275,7 @@ func parseJWTThenSetToken(c *gin.Context, conf *bootstrap.Config) (string, strin
 	}
 
 	c.Request.Header.Set("x-polaris-user", claims.UserID)
-	c.Request.Header.Set("x-polaris-token", claims.Token)
+	c.Request.Header.Set("Authorization", claims.Token)
 	return claims.UserID, claims.Token, nil
 }
 

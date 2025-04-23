@@ -11,8 +11,9 @@ webServer:
   jwt:
     secretKey: "ainative@pole@1234567890"
     expired: 1800
-  namingV1URL: "/naming/v1"
-  authURL: "/core/v1"
+  coreURL: "/core/v1"
+  namingURL: "/naming/v1"
+  authURL: "/auth/v1"
   configURL: "/config/v1"
   monitorURL: "/api/v1"
   webPath: "web/dist/"

@@ -64,18 +64,18 @@ func AuthRouter(webSvr *gin.Engine, config *bootstrap.Config) {
 	v1.PUT("/usergroup/token/refresh", handlers.ReverseProxyForServer(&config.PoleServer, config))
 
 	// 创建鉴权策略
-	v1.POST("/auth/strategy", handlers.ReverseProxyForServer(&config.PoleServer, config))
+	v1.POST("/policies", handlers.ReverseProxyForServer(&config.PoleServer, config))
 	// 查询鉴权策略详细
-	v1.GET("/auth/strategy/detail", handlers.ReverseProxyForServer(&config.PoleServer, config))
+	v1.GET("/policy/detail", handlers.ReverseProxyForServer(&config.PoleServer, config))
 	// 批量更新鉴权策略
-	v1.PUT("/auth/strategies", handlers.ReverseProxyForServer(&config.PoleServer, config))
+	v1.PUT("/policies", handlers.ReverseProxyForServer(&config.PoleServer, config))
 	// 批量删除鉴权策略
-	v1.POST("/auth/strategies/delete", handlers.ReverseProxyForServer(&config.PoleServer, config))
+	v1.POST("/policies/delete", handlers.ReverseProxyForServer(&config.PoleServer, config))
 	// 获取鉴权策略列表
-	v1.GET("/auth/strategies", handlers.ReverseProxyForServer(&config.PoleServer, config))
+	v1.GET("/policies", handlers.ReverseProxyForServer(&config.PoleServer, config))
 	// 查看用户/用户组所能操作的所有资源列表数据
-	v1.GET("/auth/principal/resources", handlers.ReverseProxyForServer(&config.PoleServer, config))
+	v1.GET("/principal/resources", handlers.ReverseProxyForServer(&config.PoleServer, config))
 
 	// 获取鉴权开关状态信息
-	v1.GET("/auth/status", handlers.ReverseProxyNoAuthForServer(&config.PoleServer, config))
+	v1.GET("/status", handlers.ReverseProxyNoAuthForServer(&config.PoleServer, config))
 }

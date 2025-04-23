@@ -27,7 +27,7 @@ import (
 // DiscoveryV1Router 路由请求
 func DiscoveryV1Router(r *gin.Engine, config *bootstrap.Config) {
 	// 后端server路由组
-	v1 := r.Group(config.WebServer.NamingV1URL)
+	v1 := r.Group(config.WebServer.NamingURL)
 	// 创建命名空间
 	v1.POST("/namespaces", handlers.ReverseProxyForServer(&config.PoleServer, config))
 	// 创建服务

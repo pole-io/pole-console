@@ -51,12 +51,7 @@ func ReverseHandleBootstrap(poleServer *bootstrap.PoleServer, conf *bootstrap.Co
 			if err := resp.Body.Close(); err != nil {
 				return err
 			}
-			body := []byte(`
-			{
-				"code": 200000,
-				"info": "success",
-			}
-			`)
+			body := []byte(`{"code": 200000,"info": "success"}`)
 			resp.StatusCode = http.StatusOK
 			resp.Header["Content-Length"] = []string{fmt.Sprint(len(body))}
 			resp.Body = io.NopCloser(bytes.NewReader(body))

@@ -19,6 +19,7 @@ package router
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/polarismesh/polaris-console/bootstrap"
@@ -28,14 +29,15 @@ import (
 // Router 路由请求
 func Router(config *bootstrap.Config) {
 	r := gin.Default()
-	// 加载静态资源
-	r.Static("/static", config.WebServer.WebPath+"static")
+	r.Use(Cors())
+	// // 加载静态资源
+	// r.Static("/static", config.WebServer.WebPath+"static")
 
-	// 加载Swagger UI
-	// r.Static("/apidocs", "./swagger-ui")
+	// // 加载Swagger UI
+	// // r.Static("/apidocs", "./swagger-ui")
 
-	// 加载界面
-	r.LoadHTMLGlob(config.WebServer.WebPath + "index.html")
+	// // 加载界面
+	// r.LoadHTMLGlob(config.WebServer.WebPath + "index.html")
 	r.GET("/", handlers.PolarisPage(config))
 
 	// 监控请求路由组
@@ -45,6 +47,8 @@ func Router(config *bootstrap.Config) {
 
 	// 管理接口
 	AdminRouter(r, config)
+	// 命名空间请求
+	NamespaceRouter(r, config)
 	// 鉴权请求
 	AuthRouter(r, config)
 	// 服务请求
@@ -57,5 +61,23 @@ func Router(config *bootstrap.Config) {
 	address := fmt.Sprintf("%v:%v", config.WebServer.ListenIP, config.WebServer.ListenPort)
 	if err := r.Run(address); err != nil {
 		fmt.Printf("run http server: %+v\n", err)
+	}
+}
+
+func Cors() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		method := c.Request.Method
+		origin := c.Request.Header.Get("Origin")
+		if origin != "" {
+			c.Header("Access-Control-Allow-Origin", "*") // 可将将 * 替换为指定的域名
+			c.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, UPDATE")
+			c.Header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization")
+			c.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Cache-Control, Content-Language, Content-Type")
+			c.Header("Access-Control-Allow-Credentials", "true")
+		}
+		if method == "OPTIONS" {
+			c.AbortWithStatus(http.StatusNoContent)
+		}
+		c.Next()
 	}
 }

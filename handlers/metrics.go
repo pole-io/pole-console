@@ -1176,12 +1176,12 @@ func listAllService(ctx *gin.Context, conf *bootstrap.Config, namespace string) 
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s%s/services/all?namespace="+namespace, conf.PoleServer.Address, conf.WebServer.NamingV1URL), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s%s/services/all?namespace="+namespace, conf.PoleServer.Address, conf.WebServer.NamingURL), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Add("X-Polaris-Token", token)
+	req.Header.Add("Authorization", token)
 	req.Header.Add("X-Polaris-User", userID)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
