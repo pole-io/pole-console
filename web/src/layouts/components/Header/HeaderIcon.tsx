@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Popup, Badge, Dropdown, Space } from 'tdesign-react';
 import {
   Icon,
-  LogoGithubIcon,
-  MailIcon,
   HelpCircleIcon,
   SettingIcon,
   PoweroffIcon,
@@ -12,7 +10,7 @@ import {
 } from 'tdesign-icons-react';
 import { useAppDispatch, useAppSelector } from 'modules/store';
 import { toggleSetting } from 'modules/global';
-import { logout } from 'modules/user';
+import { logout } from 'modules/user/login';
 import Style from './HeaderIcon.module.less';
 
 const { DropdownMenu, DropdownItem } = Dropdown;
@@ -20,7 +18,7 @@ const { DropdownMenu, DropdownItem } = Dropdown;
 export default memo(() => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const userInfo = useAppSelector((state) => state.user.currentUser);
+  const userInfo = useAppSelector((state) => state.userLogin.currentUser);
 
   const gotoWiki = () => {
     window.open('https://tdesign.tencent.com/react/overview');

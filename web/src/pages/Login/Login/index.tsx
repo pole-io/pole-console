@@ -4,7 +4,7 @@ import { Form, MessagePlugin, Input, Button, SubmitContext } from 'tdesign-react
 import { LockOnIcon, UserIcon, BrowseOffIcon, BrowseIcon } from 'tdesign-icons-react';
 import classnames from 'classnames';
 import { useAppDispatch, useAppSelector } from 'modules/store';
-import { login } from 'modules/user';
+import { login } from 'modules/user/login';
 
 import Style from './index.module.less';
 import { openErrNotification } from 'utils/notifition';

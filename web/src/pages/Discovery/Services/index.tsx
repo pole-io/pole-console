@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Popup, Table, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData } from 'tdesign-react';
+import { Link, Popup, Table, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData } from 'tdesign-react';
 import { DeleteIcon, EditIcon, RefreshIcon, ChevronRightCircleIcon, CreditcardIcon } from 'tdesign-icons-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import Search from 'components/Search';
 import LabelInput from 'components/LabelInput';
@@ -17,7 +18,7 @@ import { editorService, resetService } from 'modules/discovery/service';
 
 const ServerError = () => <ErrorPage code={500} />;
 
-const columns = (handleEditService: (row: TableRowData) => void): PrimaryTableProps['columns'] => [
+const columns = (handleEditService: (row: TableRowData) => void, redirect: (service: string, namespace: string) => void): PrimaryTableProps['columns'] => [
     {
         colKey: 'id',
         title: 'ID',
@@ -27,7 +28,10 @@ const columns = (handleEditService: (row: TableRowData) => void): PrimaryTablePr
     {
         colKey: 'name',
         title: '服务名',
-        cell: ({ row: { name } }) => <Text>{name}</Text>,
+        cell: ({ row: { name, namespace } }) => <Link
+            theme="primary"
+            onClick={() => {redirect(name, namespace)}}
+        >{name}</Link>,
     },
     {
         colKey: 'namespace',
@@ -121,6 +125,7 @@ const columns = (handleEditService: (row: TableRowData) => void): PrimaryTablePr
 
 export default React.memo(() => {
     const dispatch = useAppDispatch();
+    const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState<boolean>();
     const [data, setData] = useState<TableProps['data']>([]);
     const [total, setTotal] = useState(0);
@@ -244,7 +249,10 @@ export default React.memo(() => {
                 }} />
             <Table
                 data={data}
-                columns={columns(handleEditService)}
+                columns={columns(handleEditService, (service: string, namespace: string) => {
+                    navigate(`instance?namespace=${namespace}&service=${service}`);
+                    // navigate(`/discovery/service/instance/${namespace}/${service}`);
+                })}
                 loading={isLoading}
                 rowKey="id"
                 size={"large"}

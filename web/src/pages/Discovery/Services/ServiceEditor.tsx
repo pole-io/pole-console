@@ -12,13 +12,13 @@ import { VisibilityMode_Single, VisibilityMode_All, VisibilityMode_Specified } f
 
 const { FormItem } = Form;
 
-interface ServiceEditorProps {
+interface IServiceEditorProps {
     modify: boolean;
     closeDrawer: () => void;
     visible: boolean;
 }
 
-const ServiceEditor: React.FC<ServiceEditorProps> = ({ visible, modify, closeDrawer }) => {
+const ServiceEditor: React.FC<IServiceEditorProps> = ({ visible, modify, closeDrawer }) => {
     const [form] = Form.useForm();
     const dispatch = useAppDispatch();
     const currentService = useAppSelector(selectService);

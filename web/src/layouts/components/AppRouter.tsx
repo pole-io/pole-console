@@ -12,16 +12,11 @@ const { Content } = Layout;
 type TRenderRoutes = (routes: IRouter[], parentPath?: string, breadcrumbs?: string[]) => React.ReactNode[];
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isLogin } = useAppSelector((state) => state.user);
+  const { isLogin } = useAppSelector((state) => state.userLogin);
   const location = useLocation();
 
-  useEffect(() => {
-    if (!isLogin) {
-      MessagePlugin.error('您当前未登录，请先登录');
-    }
-  }, [isLogin]);
-
   if (!isLogin) {
+    MessagePlugin.error('您当前未登录，请先登录');
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 

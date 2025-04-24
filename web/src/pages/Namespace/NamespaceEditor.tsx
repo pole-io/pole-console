@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Drawer, Form, Input, Select, Radio, RadioGroup, SelectOption, SelectValue, Space, Button } from "tdesign-react";
+import { Drawer, Form, Input, Select, Radio, RadioGroup, Space, Button } from "tdesign-react";
 import type { FormProps } from 'tdesign-react';
 import { describeAllNamespaces, NamespaceView } from 'services/namespace';
 import { openErrNotification, openInfoNotification } from 'utils/notifition';
 import LabelInput from 'components/LabelInput';
 import { useAppDispatch, useAppSelector } from 'modules/store';
-import { saveNamespace, selectCurrentNamespace, updateNamespace } from 'modules/namespace';
+import { saveNamespace, updateNamespace, selectNamespace } from 'modules/namespace';
 import { VisibilityMode_Single, VisibilityMode_All, VisibilityMode_Specified } from 'utils/visible';
 
 const { FormItem } = Form;
@@ -20,7 +20,7 @@ const NamespaceEditor: React.FC<NamespaceEditorProps> = ({ visible, modify, clos
     const [form] = Form.useForm();
 
     const dispatch = useAppDispatch();
-    const currentNsState = useAppSelector(selectCurrentNamespace);
+    const currentNsState = useAppSelector(selectNamespace);
     const { name, comment, service_export_to, metadata, visibility_mode } = currentNsState;
     const [namespaceOptions, setNamespaceOptions] = useState<{ label: string, value: string }[]>([]);
 
@@ -34,7 +34,7 @@ const NamespaceEditor: React.FC<NamespaceEditorProps> = ({ visible, modify, clos
                 name: name,
                 comment: comment,
                 service_export_to: service_export_to,
-                metadata: metadata,
+                namespace_labels: metadata,
                 visibility_mode: { type: visibility_mode },
             });
         }
@@ -50,6 +50,7 @@ const NamespaceEditor: React.FC<NamespaceEditorProps> = ({ visible, modify, clos
     }
 
     const onSubmit: FormProps['onSubmit'] = async (e) => {
+        console.log('onSubmit', e);
         if (e.validateResult !== true) {
             return;
         }
@@ -58,9 +59,8 @@ const NamespaceEditor: React.FC<NamespaceEditorProps> = ({ visible, modify, clos
             name: form.getFieldValue('name') as string,
             comment: form.getFieldValue('comment') as string,
             service_export_to: form.getFieldValue('service_export_to') as string[],
-            metadata: metadata,
+            metadata: form.getFieldValue('namespace_labels') as Record<string, string>,
         }
-
         let result;
         if (modify) {
             result = await dispatch(updateNamespace({ state: data }))
@@ -112,7 +112,7 @@ const NamespaceEditor: React.FC<NamespaceEditorProps> = ({ visible, modify, clos
                             return (
                                 <FormItem
                                     label={'标签'}
-                                    name={"metadata"}
+                                    name={"namespace_labels"}
                                     style={{ width: '100%' }}>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                         <LabelInput
@@ -121,11 +121,13 @@ const NamespaceEditor: React.FC<NamespaceEditorProps> = ({ visible, modify, clos
                                                 if (del) {
                                                     const newLabels = { ...metadata };
                                                     delete newLabels[key];
-                                                    setFieldsValue({ metadata: newLabels });
+                                                    console.log('newLabels', newLabels);
+                                                    setFieldsValue({ namespace_labels: newLabels });
                                                 } else {
                                                     if (key !== '' && value !== '') {
                                                         const newLabels = { ...metadata, [key]: value };
-                                                        setFieldsValue({ metadata: newLabels });
+                                                        console.log('newLabels', newLabels);
+                                                        setFieldsValue({ namespace_labels: newLabels });
                                                     }
                                                 }
                                             }}

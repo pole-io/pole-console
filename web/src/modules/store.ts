@@ -2,15 +2,17 @@ import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useSelector, useDispatch } from 'react-redux';
 
 import global from './global';
-import user from './user';
+import userLogin from './user/login';
 import namespace from './namespace';
 import discoveryService from './discovery/service';
+import discoveryInstance from './discovery/instance';
 
 const reducer = combineReducers({
   global,
-  user,
+  userLogin,
   namespace,
   discoveryService,
+  discoveryInstance,
 });
 
 export const store = configureStore({

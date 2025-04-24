@@ -52,7 +52,7 @@ export const updateServices = createAsyncThunk(`service/update`, async ({ state 
 });
 
 
-const serviceEditorSlice = createSlice({
+const serviceReducer = createSlice({
     name: 'service/edit',
     initialState,
     reducers: {
@@ -95,8 +95,8 @@ const serviceEditorSlice = createSlice({
 export const {
     editorService,
     resetService,
-} = serviceEditorSlice.actions;
+} = serviceReducer.actions;
 export const selectService = (state: RootState) => state.discoveryService;
 
 
-export default serviceEditorSlice.reducer;
+export default serviceReducer.reducer;

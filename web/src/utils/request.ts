@@ -125,6 +125,7 @@ export async function putApiRequest<T>(options: APIRequestOption) {
         },
       })
       .catch(function (error) {
+        console.log('error', error)
         if (error.response.status === TokenNotExistCode) {
           handleTokenNotExist()
         }

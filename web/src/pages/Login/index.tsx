@@ -1,7 +1,7 @@
 import React, { memo, useState } from 'react';
 import classNames from 'classnames';
-import Login from './components/Login';
-import Register from './components/Register';
+import Login from './Login';
+import Register from './Register';
 import LoginHeader from './components/Header';
 import { useAppSelector } from 'modules/store';
 import { selectGlobal } from 'modules/global';

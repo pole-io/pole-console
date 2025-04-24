@@ -25,6 +25,7 @@ export const saveNamespace = createAsyncThunk(`namespace/create`, async ({ state
         const res = await createNamespace([state]);
         return fulfillWithValue(res); // 返回 token
     } catch (error) {
+        console.log('error', error);
         return rejectWithValue((error as Error).message); // 捕获错误并返回
     }
 });
@@ -34,11 +35,12 @@ export const updateNamespace = createAsyncThunk(`namespace/update`, async ({ sta
         const res = await modifyNamespace([state]);
         return fulfillWithValue(res); // 返回 token
     } catch (error) {
+        console.log('error', error);
         return rejectWithValue((error as Error).message); // 捕获错误并返回
     }
 });
 
-const namespaceEditorSlice = createSlice({
+const namespaceReducer = createSlice({
     name: 'namespace/edit',
     initialState,
     reducers: {
@@ -59,10 +61,10 @@ const namespaceEditorSlice = createSlice({
     extraReducers: () => { },
 });
 
-export const selectCurrentNamespace = (state: RootState) => state.namespace;
+export const selectNamespace = (state: RootState) => state.namespace;
 
 export const {
     editorNamespace,
-} = namespaceEditorSlice.actions;
+} = namespaceReducer.actions;
 
-export default namespaceEditorSlice.reducer;
+export default namespaceReducer.reducer;

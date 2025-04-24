@@ -1,211 +1,194 @@
-import React, { useState, memo, useEffect } from 'react';
-import { Table, Tag, Row, Col, Button, Input } from 'tdesign-react';
-import { SearchIcon } from 'tdesign-icons-react';
+import React, { memo, useRef } from 'react';
+import {
+  Form,
+  Row,
+  Col,
+  Input,
+  Radio,
+  Button,
+  DatePicker,
+  Select,
+  Textarea,
+  Avatar,
+  Upload,
+  MessagePlugin,
+} from 'tdesign-react';
 import classnames from 'classnames';
-import { useAppDispatch, useAppSelector } from 'modules/store';
-import { selectListBase, getList, clearPageState } from 'modules/list/base';
+import { SubmitContext, FormInstanceFunctions } from 'tdesign-react/es/form/type';
 import CommonStyle from 'styles/common.module.less';
-import style from './index.module.less';
-import { TrendIcon, ETrend } from 'components/Board';
+import Style from './index.module.less';
 
-export const PaymentTypeMap: {
-  [key: number]: React.ReactElement;
-} = {
-  0: <TrendIcon trend={ETrend.down} trendNum='付款' />,
-  1: <TrendIcon trend={ETrend.up} trendNum='收款' />,
-};
+const { FormItem } = Form;
+const { Option } = Select;
+const { Group } = Avatar;
 
-export const StatusMap: {
-  [key: number]: React.ReactElement;
-} = {
-  1: (
-    <Tag theme='warning' variant='light'>
-      待审核
-    </Tag>
-  ),
-  2: (
-    <Tag theme='warning' variant='light'>
-      待履行
-    </Tag>
-  ),
-  3: (
-    <Tag theme='success' variant='light'>
-      履行中
-    </Tag>
-  ),
-  4: (
-    <Tag theme='success' variant='light'>
-      已完成
-    </Tag>
-  ),
-  5: (
-    <Tag theme='danger' variant='light'>
-      审核失败
-    </Tag>
-  ),
-};
-
-export const ContractTypeMap: {
-  [key: number]: string;
-} = {
-  0: '审核失败',
-  1: '待审核',
-  2: '待履行',
+const INITIAL_DATA = {
+  name: '',
+  type: '',
+  payment: '',
+  partyA: '',
+  partyB: '',
+  signDate: '',
+  effectiveDate: '',
+  endDate: '',
+  remark: '',
+  notary: '',
+  file: [],
 };
 
 export default memo(() => {
-  const dispatch = useAppDispatch();
-  const pageState = useAppSelector(selectListBase);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<(string | number)[]>([1, 2]);
+  const formRef = useRef<FormInstanceFunctions>();
 
-  const { loading, contractList, current, pageSize, total } = pageState;
+  const onSubmit = (e: SubmitContext) => {
+    if (e.validateResult === true) {
+      console.log('form 值', formRef.current?.getFieldsValue?.(true));
+      MessagePlugin.info('提交成功');
+    }
+  };
 
-  useEffect(() => {
-    dispatch(
-      getList({
-        pageSize: pageState.pageSize,
-        current: pageState.current,
-      }),
-    );
-    return () => {
-      console.log('clear');
-      dispatch(clearPageState());
-    };
-  }, []);
+  const handleFail = ({ file }: { file: any }) => {
+    console.error(`文件 ${file.name} 上传失败`);
+  };
 
-  function onSelectChange(value: (string | number)[]) {
-    setSelectedRowKeys(value);
-  }
   return (
-    <div className={classnames(CommonStyle.pageWithPadding, CommonStyle.pageWithColor)}>
-      <Row justify='space-between' className={style.toolBar}>
-        <Col>
-          <Row gutter={8} align='middle'>
-            <Col>
-              <Button>新建合同</Button>
+    <div className={classnames(CommonStyle.pageWithColor)}>
+      <div className={Style.formContainer}>
+        <Form ref={formRef} onSubmit={onSubmit} labelWidth={100} labelAlign='top'>
+          <div className={Style.titleBox}>
+            <div className={Style.titleText}>合同信息</div>
+          </div>
+          <Row gutter={[32, 24]}>
+            <Col span={6}>
+              <FormItem
+                label='合同名称'
+                name='name'
+                initialData={INITIAL_DATA.name}
+                rules={[{ required: true, message: '合同名称必填', type: 'error' }]}
+              >
+                <Input placeholder='请输入内容' />
+              </FormItem>
             </Col>
-            <Col>
-              <Button theme='default'>导出合同</Button>
+
+            <Col span={6}>
+              <FormItem
+                label='合同类型'
+                name='type'
+                initialData={INITIAL_DATA.type}
+                rules={[{ required: true, message: '合同类型必填', type: 'error' }]}
+              >
+                <Select placeholder='请选择类型'>
+                  <Option key='A' label='类型A' value='A' />
+                  <Option key='B' label='类型B' value='B' />
+                  <Option key='C' label='类型C' value='C' />
+                </Select>
+              </FormItem>
             </Col>
-            <Col>
-              <div>已选 {selectedRowKeys?.length || 0} 项</div>
+
+            <Col span={12}>
+              <FormItem
+                label='合同收付类型'
+                name='payment'
+                initialData={INITIAL_DATA.payment}
+                rules={[{ required: true }]}
+              >
+                <Radio.Group>
+                  <Radio value='0'>收款</Radio>
+                  <Radio value='1'>付款</Radio>
+                </Radio.Group>
+                <Input placeholder='请输入金额' style={{ width: 160 }} />
+              </FormItem>
+            </Col>
+
+            <Col span={6}>
+              <FormItem label='甲方' name='partyA' initialData={INITIAL_DATA.partyA} rules={[{ required: true }]}>
+                <Select placeholder='请选择类型'>
+                  <Option key='A' label='公司A' value='A' />
+                  <Option key='B' label='公司B' value='B' />
+                  <Option key='C' label='公司C' value='C' />
+                </Select>
+              </FormItem>
+            </Col>
+
+            <Col span={6}>
+              <FormItem label='乙方' name='partyB' initialData={INITIAL_DATA.partyB} rules={[{ required: true }]}>
+                <Select value='A' placeholder='请选择类型'>
+                  <Option key='A' label='公司A' value='A' />
+                  <Option key='B' label='公司B' value='B' />
+                  <Option key='C' label='公司C' value='C' />
+                </Select>
+              </FormItem>
+            </Col>
+
+            <Col span={6} className={Style.dateCol}>
+              <FormItem
+                label='合同签订日期'
+                name='signDate'
+                initialData={INITIAL_DATA.signDate}
+                rules={[{ required: true }]}
+              >
+                <DatePicker mode='date' />
+              </FormItem>
+            </Col>
+
+            <Col span={6} className={Style.dateCol}>
+              <FormItem
+                label='合同生效日期'
+                name='effectiveDate'
+                initialData={INITIAL_DATA.effectiveDate}
+                rules={[{ required: true }]}
+              >
+                <DatePicker mode='date' />
+              </FormItem>
+            </Col>
+
+            <Col span={6} className={Style.dateCol}>
+              <FormItem
+                label='合同结束日期'
+                name='endDate'
+                initialData={INITIAL_DATA.endDate}
+                rules={[{ required: true }]}
+              >
+                <DatePicker mode='date' />
+              </FormItem>
+            </Col>
+
+            <Col span={6}>
+              <FormItem label='合同文件' name='file' initialData={INITIAL_DATA.file}>
+                <Upload
+                  onFail={handleFail}
+                  tips='请上传pdf文件，大小在60M以内'
+                  action='//service-bv448zsw-1257786608.gz.apigw.tencentcs.com/api/upload-demo'
+                />
+              </FormItem>
             </Col>
           </Row>
-        </Col>
-        <Col>
-          <Input suffixIcon={<SearchIcon />} placeholder='请输入你需要搜索的型号' />
-        </Col>
-      </Row>
 
-      <Table
-        columns={[
-          {
-            colKey: 'row-select',
-            fixed: 'left',
-            type: 'multiple',
-            // width: 50,
-          },
-          {
-            align: 'left',
-            width: 200,
-            ellipsis: true,
-            colKey: 'name',
-            title: '合同名称',
-          },
-          {
-            align: 'left',
-            width: 200,
-            ellipsis: true,
-            colKey: 'status',
-            title: '合同状态',
-            cell({ row }) {
-              return StatusMap[row.status || 5];
-            },
-          },
-          {
-            align: 'left',
-            width: 200,
-            ellipsis: true,
-            colKey: 'no',
-            title: '合同编号',
-          },
-          {
-            align: 'left',
-            width: 200,
-            ellipsis: true,
-            colKey: 'contractType',
-            title: '合同类型',
-            cell({ row }) {
-              return ContractTypeMap[row.contractType];
-            },
-          },
-          {
-            align: 'left',
-            width: 200,
-            ellipsis: true,
-            colKey: 'paymentType',
-            title: '合同收付类型',
-            cell({ row }) {
-              return PaymentTypeMap[row.paymentType];
-            },
-          },
-          {
-            align: 'left',
-            width: 200,
-            ellipsis: true,
-            colKey: 'amount',
-            title: '合同金额（元）',
-          },
-          {
-            align: 'left',
-            fixed: 'right',
-            width: 180,
-            colKey: 'op',
-            title: '操作',
-            cell() {
-              return (
-                <>
-                  <Button theme='primary' variant='text'>
-                    管理
-                  </Button>
-                  <Button theme='primary' variant='text'>
-                    删除
-                  </Button>
-                </>
-              );
-            },
-          },
-        ]}
-        loading={loading}
-        data={contractList}
-        rowKey='index'
-        selectedRowKeys={selectedRowKeys}
-        verticalAlign='top'
-        hover
-        onSelectChange={onSelectChange}
-        pagination={{
-          pageSize,
-          total,
-          current,
-          showJumper: true,
-          onCurrentChange(current, pageInfo) {
-            dispatch(
-              getList({
-                pageSize: pageInfo.pageSize,
-                current: pageInfo.current,
-              }),
-            );
-          },
-          onPageSizeChange(size) {
-            dispatch(
-              getList({
-                pageSize: size,
-                current: 1,
-              }),
-            );
-          },
-        }}
-      />
+          <div className={Style.titleBox}>
+            <div className={Style.titleText}>其他信息</div>
+          </div>
+
+          <FormItem label='备注' name='remark' initialData={INITIAL_DATA.remark}>
+            <Textarea placeholder='请输入备注' />
+          </FormItem>
+
+          <FormItem label='公证人' name='notary' initialData={INITIAL_DATA.notary}>
+            <Group>
+              <Avatar>D</Avatar>
+              <Avatar>S</Avatar>
+              <Avatar>+</Avatar>
+            </Group>
+          </FormItem>
+
+          <FormItem>
+            <Button type='submit' theme='primary'>
+              提交
+            </Button>
+            <Button type='reset' style={{ marginLeft: 12 }}>
+              重置
+            </Button>
+          </FormItem>
+        </Form>
+      </div>
     </div>
   );
 });

@@ -9,12 +9,12 @@ export const LoginUserOwnerIdKey = 'login-owner-id'
 export const LoginUserNameKey = 'login-name'
 
 const initialState = {
-  isLogin: !!localStorage.getItem(PolarisTokenKey), // 是否登录
+  isLogin: !!sessionStorage.getItem(PolarisTokenKey), // 是否登录
   currentUser: {
-    name: localStorage.getItem(LoginUserNameKey) || '', // 用户名
-    role: localStorage.getItem(LoginRoleKey) || '', // 角色
-    user_id: localStorage.getItem(LoginUserIdKey) || '', // 用户ID
-    owner_id: localStorage.getItem(LoginUserOwnerIdKey) || '', // 所属ID
+    name: sessionStorage.getItem(LoginUserNameKey) || '', // 用户名
+    role: sessionStorage.getItem(LoginRoleKey) || '', // 角色
+    user_id: sessionStorage.getItem(LoginUserIdKey) || '', // 用户ID
+    owner_id: sessionStorage.getItem(LoginUserOwnerIdKey) || '', // 所属ID
   }
 };
 
@@ -22,27 +22,27 @@ const initialState = {
 export const login = createAsyncThunk(`${namespace}/login`, async ({ username, password }: { username: string; password: string }, { fulfillWithValue, rejectWithValue }) => {
   try {
     const res = await doLogin({ name: username, password: password });
-    localStorage.setItem(PolarisTokenKey, res.token);
-    localStorage.setItem(LoginUserNameKey, res.name);
-    localStorage.setItem(LoginRoleKey, res.role);
-    localStorage.setItem(LoginUserIdKey, res.user_id);
-    localStorage.setItem(LoginUserOwnerIdKey, res.owner_id);
+    sessionStorage.setItem(PolarisTokenKey, res.token);
+    sessionStorage.setItem(LoginUserNameKey, res.name);
+    sessionStorage.setItem(LoginRoleKey, res.role);
+    sessionStorage.setItem(LoginUserIdKey, res.user_id);
+    sessionStorage.setItem(LoginUserOwnerIdKey, res.owner_id);
     return fulfillWithValue(res); // 返回 token
   } catch (error) {
     return rejectWithValue((error as Error).message); // 捕获错误并返回
   }
 });
 
-const loginSlice = createSlice({
+const loginReducer = createSlice({
   name: namespace,
   initialState,
   reducers: {
     logout: (state) => {
-      localStorage.removeItem(PolarisTokenKey);
-      localStorage.removeItem(LoginUserNameKey);
-      localStorage.removeItem(LoginRoleKey);
-      localStorage.removeItem(LoginUserIdKey);
-      localStorage.removeItem(LoginUserOwnerIdKey);
+      sessionStorage.removeItem(PolarisTokenKey);
+      sessionStorage.removeItem(LoginUserNameKey);
+      sessionStorage.removeItem(LoginRoleKey);
+      sessionStorage.removeItem(LoginUserIdKey);
+      sessionStorage.removeItem(LoginUserOwnerIdKey);
       // 清空当前用户信息
       state.isLogin = false;
       state.currentUser = {
@@ -70,5 +70,5 @@ const loginSlice = createSlice({
   },
 });
 
-export const { logout } = loginSlice.actions;
-export default loginSlice.reducer;
+export const { logout } = loginReducer.actions;
+export default loginReducer.reducer;
