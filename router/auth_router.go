@@ -36,13 +36,13 @@ func AuthRouter(webSvr *gin.Engine, config *bootstrap.Config) {
 	// 批量删除用户
 	v1.POST("/users/delete", handlers.ReverseProxyForServer(&config.PoleServer, config))
 	// 更新用户
-	v1.PUT("/user", handlers.ReverseProxyForServer(&config.PoleServer, config))
+	v1.PUT("/users", handlers.ReverseProxyForServer(&config.PoleServer, config))
 	// 更新用户密码
 	v1.PUT("/user/password", handlers.ReverseProxyForServer(&config.PoleServer, config))
 	// 查询用户Token信息
 	v1.GET("/user/token", handlers.ReverseProxyForServer(&config.PoleServer, config))
 	// 更新用户Token可用状态
-	v1.PUT("/user/token/status", handlers.ReverseProxyForServer(&config.PoleServer, config))
+	v1.PUT("/user/token/enable", handlers.ReverseProxyForServer(&config.PoleServer, config))
 	// 重置用户Token
 	v1.PUT("/user/token/refresh", handlers.ReverseProxyForServer(&config.PoleServer, config))
 
@@ -59,7 +59,7 @@ func AuthRouter(webSvr *gin.Engine, config *bootstrap.Config) {
 	// 查询用户组Token
 	v1.GET("/usergroup/token", handlers.ReverseProxyForServer(&config.PoleServer, config))
 	// 更新用户组Token可用状态
-	v1.PUT("/usergroup/token/status", handlers.ReverseProxyForServer(&config.PoleServer, config))
+	v1.PUT("/usergroup/token/enable", handlers.ReverseProxyForServer(&config.PoleServer, config))
 	// 重置用户组Token
 	v1.PUT("/usergroup/token/refresh", handlers.ReverseProxyForServer(&config.PoleServer, config))
 
@@ -77,5 +77,5 @@ func AuthRouter(webSvr *gin.Engine, config *bootstrap.Config) {
 	v1.GET("/principal/resources", handlers.ReverseProxyForServer(&config.PoleServer, config))
 
 	// 获取鉴权开关状态信息
-	v1.GET("/status", handlers.ReverseProxyNoAuthForServer(&config.PoleServer, config))
+	v1.GET("/system", handlers.ReverseProxyNoAuthForServer(&config.PoleServer, config))
 }

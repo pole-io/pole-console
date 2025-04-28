@@ -104,8 +104,12 @@ export async function describeServices(params: DescribeServicesParams) {
     }
 }
 
-export async function fetchAllServices(params = {}) {
-    return getAllList(describeServices, {})(params)
+export async function describeAllServices(params = {}) {
+    const res = await getAllList(describeServices, {})(params)
+    return {
+        list: res.list ? res.list : [],
+        totalCount: res.totalCount,
+    }
 }
 
 export async function modifyServices(params: ModifyServicesParams[]) {

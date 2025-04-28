@@ -1,35 +1,43 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { describeComplicatedNamespaces } from 'services/namespace';
-import { Table, Popup, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData } from 'tdesign-react';
+import React, { useEffect, useState } from 'react';
+import { Link, Popup, Table, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData, Tabs, Loading } from 'tdesign-react';
 import { DeleteIcon, EditIcon, RefreshIcon, ChevronRightCircleIcon, CreditcardIcon } from 'tdesign-icons-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
-import { useAppDispatch, useAppSelector } from 'modules/store';
-import { openErrNotification } from 'utils/notifition';
-import ErrorPage from 'components/ErrorPage';
-import Text from 'components/Text';
-import { CheckVisibilityMode, VisibilityModeMap } from 'utils/visible';
-import NamespaceEditor from './NamespaceEditor';
 import Search from 'components/Search';
 import LabelInput from 'components/LabelInput';
+import ErrorPage from 'components/ErrorPage';
+import Text from 'components/Text';
+import { useAppDispatch, useAppSelector } from 'modules/store';
+import { describeServices } from 'services/service';
+import { openErrNotification } from 'utils/notifition';
+import { CheckVisibilityMode, VisibilityModeMap } from 'utils/visible';
+import ServiceEditor from './ServiceEditor';
 import FormItem from 'tdesign-react/es/form/FormItem';
 import style from './index.module.less';
-import { editorNamespace } from 'modules/namespace';
-import { set } from 'lodash';
+import { editorService, resetService } from 'modules/discovery/service';
+import TabPanel from 'tdesign-react/es/tabs/TabPanel';
 
 const ServerError = () => <ErrorPage code={500} />;
 
-const columns = (handleEditNamespace: (row: TableRowData) => void): PrimaryTableProps['columns'] => [
+const columns = (handleEditService: (row: TableRowData) => void, redirect: (service: string, namespace: string) => void): PrimaryTableProps['columns'] => [
     {
-        colKey: 'index',
-        title: 'id',
-        type: 'multiple' as const,
-        checkProps: ({ row }: TableRowData) => ({ disabled: row.editable === false || row.deleteable === false }),
+        colKey: 'id',
+        title: 'ID',
+        type: 'multiple',
+        checkProps: ({ row }) => ({ disabled: row.editable === false || row.deleteable === false }),
     },
     {
         colKey: 'name',
-        title: '名称',
-        cell: ({ row }: TableRowData) => <Text>{row.name}</Text>,
-        fixed: 'left',
+        title: '服务名',
+        cell: ({ row: { name, namespace } }) => <Link
+            theme="primary"
+            onClick={() => { redirect(name, namespace) }}
+        >{name}</Link>,
+    },
+    {
+        colKey: 'namespace',
+        title: '命名空间',
+        cell: ({ row: { namespace } }) => <Text>{namespace}</Text>,
     },
     {
         colKey: 'service_export_to',
@@ -61,23 +69,23 @@ const columns = (handleEditNamespace: (row: TableRowData) => void): PrimaryTable
             )
         },
     },
-
     {
-        colKey: 'commnet',
-        title: '描述',
-        // ellipsis 定义超出省略的浮层内容，cell 定义单元格内容
-        ellipsis: ({ row: { comment } }: TableRowData) => (<Text>{comment || '-'}</Text>),
+        colKey: 'department',
+        title: '部门',
+        cell: ({ row: { department } }) => <Text>{department || '-'}</Text>,
     },
     {
-        colKey: 'totalSerivce',
-        title: '服务数',
-        cell: ({ row }: TableRowData) => <Text>{row.total_service_count ?? '-'}</Text>,
+        colKey: 'business',
+        title: '业务',
+        cell: ({ row: { business } }) => <Text>{business || '-'}</Text>,
     },
     {
         colKey: 'health/total',
         title: '健康实例/总实例数',
-        cell: ({ row: { total_instance_count, total_health_instance_count } }: TableRowData) => (
-            <Text>{`${total_health_instance_count}/${total_instance_count}`}</Text>
+        cell: ({ row: { healthy_instance_count, total_instance_count } }) => (
+            <Text>
+                {`${healthy_instance_count ?? '-'}/${total_instance_count ?? '-'}`}
+            </Text>
         ),
     },
     {
@@ -88,7 +96,7 @@ const columns = (handleEditNamespace: (row: TableRowData) => void): PrimaryTable
     {
         colKey: 'action',
         title: '操作',
-        cell: ({ row }: TableRowData) => {
+        cell: ({ row }) => {
             return (
                 <Space>
                     <Tooltip content={row.editable === false ? '无权限操作' : '编辑'}>
@@ -96,7 +104,7 @@ const columns = (handleEditNamespace: (row: TableRowData) => void): PrimaryTable
                             shape="square"
                             variant="text"
                             disabled={row.editable === false}
-                            onClick={() => handleEditNamespace(row)}>
+                            onClick={() => handleEditService(row)}>
                             <EditIcon />
                         </Button>
                     </Tooltip>
@@ -116,13 +124,19 @@ const columns = (handleEditNamespace: (row: TableRowData) => void): PrimaryTable
     },
 ]
 
-export default React.memo(() => {
+interface IServicesProps {
+
+}
+
+
+const ServicesTable: React.FC<IServicesProps> = ({ }) => {
     const dispatch = useAppDispatch();
+    const navigate = useNavigate();
     const [selectedRowKeys, setSelectedRowKeys] = useState<Array<string | number>>([]);
 
     // 合并编辑相关状态
     const [searchState, setSearchState] = useState<{
-        namespaces: TableProps['data'];
+        services: TableProps['data'];
         current: number;
         limit: number;
         previous: number;
@@ -130,8 +144,7 @@ export default React.memo(() => {
         query: string;
         fetchError: boolean;
         isLoading: boolean;
-    }>({ namespaces: [], current: 1, limit: 10, previous: 0, total: 0, query: '', fetchError: false, isLoading: false });
-
+    }>({ services: [], current: 1, limit: 10, previous: 0, total: 0, query: '', fetchError: false, isLoading: false });
 
     // 合并编辑相关状态
     const [editorState, setEditorState] = useState<{
@@ -141,12 +154,18 @@ export default React.memo(() => {
     }>({ visible: false, mode: 'create', data: undefined });
 
     // 编辑、新建事件
-    const handleEditNamespace = (row: TableRowData) => {
-        dispatch(editorNamespace({
+    const handleEditService = (row: TableRowData) => {
+        dispatch(editorService({
+            id: row.id,
+            namespace: row.namespace,
             name: row.name,
             comment: row.comment,
             service_export_to: row.service_export_to ? row.service_export_to : [],
             metadata: row.metadata,
+            ports: row.ports,
+            owners: row.owners,
+            department: row.department,
+            business: row.business,
             visibility_mode: row.visibility_mode,
         }));
 
@@ -157,7 +176,8 @@ export default React.memo(() => {
         })
     }
 
-    const handleCreateNamespace = () => {
+    const handleCreateService = () => {
+        dispatch(resetService());
         setEditorState({
             visible: true,
             mode: 'create',
@@ -167,15 +187,14 @@ export default React.memo(() => {
 
     // 模拟远程请求
     async function fetchData(pageInfo: PageInfo, searchParam?: string) {
-        console.log('fetchData', pageInfo, searchParam);
         setSearchState(s => ({ ...s, current: pageInfo.current, limit: pageInfo.pageSize, previous: pageInfo.previous, fetchError: false, isLoading: true }));
         try {
             const { current, pageSize } = pageInfo;
             // 请求可能存在跨域问题
-            const response = await describeComplicatedNamespaces({
+            const response = await describeServices({
                 limit: pageSize, offset: (current - 1) * pageSize, ...(searchParam && { name: searchParam })
             });
-            setSearchState(s => ({ ...s, namespaces: response.namespaces, total: response.amount, isLoading: false }));
+            setSearchState(s => ({ ...s, services: response.list, total: response.totalCount, isLoading: false }));
         } catch (error: Error | any) {
             setSearchState(s => ({ ...s, fetchError: true, isLoading: false }));
             openErrNotification("获取数据失败", error);
@@ -194,7 +213,7 @@ export default React.memo(() => {
                 <Col>
                     <Row gutter={8} align='middle'>
                         <Col>
-                            <Button onClick={handleCreateNamespace}>新建</Button>
+                            <Button onClick={handleCreateService}>新建</Button>
                         </Col>
                         {selectedRowKeys.length > 0 && (
                             <>
@@ -213,7 +232,7 @@ export default React.memo(() => {
                     <Space>
                         <Search
                             onChange={(value: string) => {
-                                fetchData({ current: 1, pageSize: searchState.limit, previous: 0 }, value);
+                                fetchData({ current: 1, pageSize: searchState.limit, previous: 0, }, value);
                             }}
                         />
                         <Tooltip content="刷新">
@@ -222,16 +241,27 @@ export default React.memo(() => {
                     </Space>
                 </Col>
             </Row>
-            <NamespaceEditor
+            <ServiceEditor
                 key={editorState.mode + (editorState.data?.name || 'new') + (editorState.visible ? '1' : '0')}
                 modify={editorState.mode === 'edit'}
                 visible={editorState.visible}
-                closeDrawer={() => setEditorState(s => ({ ...s, visible: false }))} />
+                closeDrawer={() => {
+                    // 关闭后重置编辑器状态
+                    dispatch(resetService());
+                    setEditorState(s => ({ ...s, visible: false }));
+                    setSearchState(s => ({ ...s, fetchError: false, isLoading: true }));
+                    setTimeout(() => {
+                        fetchData({ current: 1, pageSize: searchState.limit, previous: 0 }, searchState.query);
+                    }, 1000);
+                }} />
             <Table
-                data={searchState.namespaces}
-                columns={columns(handleEditNamespace)}
+                data={searchState.services}
+                columns={columns(handleEditService, (service: string, namespace: string) => {
+                    navigate(`instance?namespace=${namespace}&service=${service}`);
+                    // navigate(`/discovery/service/instance/${namespace}/${service}`);
+                })}
                 loading={searchState.isLoading}
-                rowKey="name"
+                rowKey="id"
                 size={"large"}
                 tableLayout={'auto'}
                 cellEmptyContent={'-'}
@@ -261,8 +291,12 @@ export default React.memo(() => {
             {searchState.fetchError ? (
                 <ServerError />
             ) : (
-                table
+                <Loading loading={searchState.isLoading} className={style.loading}>
+                    {table}
+                </Loading>
             )}
         </div>
     )
-});
+}
+
+export default React.memo(ServicesTable);

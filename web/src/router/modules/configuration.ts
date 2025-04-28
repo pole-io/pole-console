@@ -25,7 +25,7 @@ const configuration: IRouter[] = [
       {
         path: 'kubernetes',
         Component: lazy(() => import('pages/Configuration/Kubernetes')),
-        meta: { title: '容器' },
+        meta: { title: 'ConfigMap' },
       },
     ],
   },

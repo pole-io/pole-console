@@ -16,8 +16,8 @@ export const openInfoNotification = (title: string, description: string) => {
         title: title,
         content: description,
         placement: 'top-right',
-        duration: 3000,
-        offset: [0, 0],
+        duration: 10000,
+        offset: [-30, 30],
         closeBtn: true,
     });
 };

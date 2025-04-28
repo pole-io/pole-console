@@ -82,12 +82,12 @@ export async function describeComplicatedNamespaces(params: DescribeNamespacePar
         data: params,
     })
 
-    const ns = res.namespaces.map((item) => {
+    const ns = res.namespaces?.map((item) => {
         return {
             ...item,
             visibility_mode: CheckVisibilityMode(item.service_export_to, item.name),
         }
-    })
+    }) || [];
 
     return { ...res, namespaces: ns }
 }

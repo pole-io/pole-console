@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../store';
-import { InstanceLocation } from 'services/instance';
+import { HEALTH_CHECK_STRUCT, InstanceLocation, createInstances, modifyInstances } from 'services/instance';
 
 // State 和 Action 类型定义
 export interface InstanceState {
@@ -15,6 +15,8 @@ export interface InstanceState {
     healthy: boolean;
     isolate: boolean;
     metadata: Record<string, string>;
+    enable_health_check: boolean;
+    health_check?: HEALTH_CHECK_STRUCT;
     location: InstanceLocation;
 }
 
@@ -30,12 +32,39 @@ const initialState: InstanceState = {
     healthy: false,
     isolate: false,
     metadata: {},
+    enable_health_check: false,
+    health_check: {
+        type: 1,
+        heartbeat: {
+            ttl: 5,
+        }
+    },
     location: {
         region: '',
         zone: '',
         campus: ''
     }
 };
+
+
+export const saveInstances = createAsyncThunk(`instance/create`, async ({ state }: { state: InstanceState }, { fulfillWithValue, rejectWithValue }) => {
+    try {
+        const res = await createInstances([{...state }])
+        return fulfillWithValue(res); // 返回 token
+    } catch (error) {
+        return rejectWithValue((error as Error).message); // 捕获错误并返回
+    }
+});
+
+export const updateInstances = createAsyncThunk(`instance/update`, async ({ state }: { state: InstanceState }, { fulfillWithValue, rejectWithValue }) => {
+    try {
+        const res = await modifyInstances([{...state, id: state.id }]);
+        return fulfillWithValue(res); // 返回 token
+    } catch (error) {
+        return rejectWithValue((error as Error).message); // 捕获错误并返回
+    }
+});
+
 
 const instanceReducer = createSlice({
     name: 'instance',
@@ -62,6 +91,13 @@ const instanceReducer = createSlice({
                 healthy: false,
                 isolate: false,
                 metadata: {},
+                enable_health_check: false,
+                health_check: {
+                    type: 1,
+                    heartbeat: {
+                        ttl: 5,
+                    }
+                },
                 location: {
                     region: '',
                     zone: '',

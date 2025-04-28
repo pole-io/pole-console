@@ -160,7 +160,7 @@ export interface DescribeInstanceLabelsResult {
 }
 export interface CreateInstanceParams {
     enable_health_check: boolean
-    health_check: HEALTH_CHECK_STRUCT
+    health_check?: HEALTH_CHECK_STRUCT
     healthy: boolean
     host: string
     isolate: boolean
@@ -171,16 +171,12 @@ export interface CreateInstanceParams {
     service: string
     version: string
     weight: number
-    location: {
-        region: string
-        zone: string
-        campus: string
-    }
+    location: InstanceLocation
 }
 
 export interface ModifyInstanceParams {
     enable_health_check: boolean
-    health_check: HEALTH_CHECK_STRUCT
+    health_check?: HEALTH_CHECK_STRUCT
     healthy: boolean
     isolate: boolean
     metadata: Record<string, string>
@@ -189,11 +185,7 @@ export interface ModifyInstanceParams {
     service: string
     version: string
     weight: number
-    location: {
-        region: string
-        zone: string
-        campus: string
-    }
+    location: InstanceLocation
     id: string
 }
 export interface DeleteInstancesParams {

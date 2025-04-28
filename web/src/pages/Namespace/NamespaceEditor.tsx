@@ -3,12 +3,13 @@ import { Drawer, Form, Input, Select, Radio, RadioGroup, Space, Button } from "t
 import type { FormProps } from 'tdesign-react';
 import { describeAllNamespaces, NamespaceView } from 'services/namespace';
 import { openErrNotification, openInfoNotification } from 'utils/notifition';
-import LabelInput from 'components/LabelInput';
 import { useAppDispatch, useAppSelector } from 'modules/store';
 import { saveNamespace, updateNamespace, selectNamespace } from 'modules/namespace';
 import { VisibilityMode_Single, VisibilityMode_All, VisibilityMode_Specified } from 'utils/visible';
+import { AddIcon, DeleteIcon } from 'tdesign-icons-react';
+import LabelInput from 'components/LabelInput';
 
-const { FormItem } = Form;
+const { FormItem, FormList } = Form;
 
 interface NamespaceEditorProps {
     modify: boolean;
@@ -20,8 +21,10 @@ const NamespaceEditor: React.FC<NamespaceEditorProps> = ({ visible, modify, clos
     const [form] = Form.useForm();
 
     const dispatch = useAppDispatch();
-    const currentNsState = useAppSelector(selectNamespace);
-    const { name, comment, service_export_to, metadata, visibility_mode } = currentNsState;
+    const currentNamespace = useAppSelector(selectNamespace);
+    const { name, comment, service_export_to, metadata, visibility_mode } = currentNamespace;
+    const namespace_labels = metadata ? Object.entries(metadata).map(([key, value]) => ({ key, value })) : [];
+
     const [namespaceOptions, setNamespaceOptions] = useState<{ label: string, value: string }[]>([]);
 
     useEffect(() => {
@@ -34,8 +37,8 @@ const NamespaceEditor: React.FC<NamespaceEditorProps> = ({ visible, modify, clos
                 name: name,
                 comment: comment,
                 service_export_to: service_export_to,
-                namespace_labels: metadata,
                 visibility_mode: { type: visibility_mode },
+                namespace_labels: metadata ? Object.entries(metadata).map(([key, value]) => ({ key, value })) : [],
             });
         }
     }, [name, comment, service_export_to, metadata, visibility_mode]);
@@ -55,11 +58,16 @@ const NamespaceEditor: React.FC<NamespaceEditorProps> = ({ visible, modify, clos
             return;
         }
 
+        const labels = form.getFieldValue('namespace_labels') as { key: string, value: string }[]
         const data = {
             name: form.getFieldValue('name') as string,
             comment: form.getFieldValue('comment') as string,
             service_export_to: form.getFieldValue('service_export_to') as string[],
-            metadata: form.getFieldValue('namespace_labels') as Record<string, string>,
+            metadata: labels.reduce((acc: { [key: string]: string }, { key, value }) => {
+                acc[key] = value;
+                return acc;
+            }
+                , {}),
         }
         let result;
         if (modify) {
@@ -71,8 +79,8 @@ const NamespaceEditor: React.FC<NamespaceEditorProps> = ({ visible, modify, clos
             openErrNotification('请求错误', result?.payload as string);
         } else {
             openInfoNotification('请求成功', modify ? '修改命名空间成功' : '创建命名空间成功');
+            closeDrawer();
         }
-        closeDrawer();
     };
 
     return (
@@ -103,40 +111,10 @@ const NamespaceEditor: React.FC<NamespaceEditorProps> = ({ visible, modify, clos
                         label={'描述'}
                         name={"comment"}
                         initialData={comment}
-                        tips={'命名空间描述信息'}
                         rules={[{ max: 1024, message: '长度不超过1024个字符' }]}>
                         <Input />
                     </FormItem>
-                    <FormItem>
-                        {({ getFieldValue, setFieldsValue }) => {
-                            return (
-                                <FormItem
-                                    label={'标签'}
-                                    name={"namespace_labels"}
-                                    style={{ width: '100%' }}>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                        <LabelInput
-                                            labels={metadata}
-                                            onChange={(key: string, value: string, del: boolean) => {
-                                                if (del) {
-                                                    const newLabels = { ...metadata };
-                                                    delete newLabels[key];
-                                                    console.log('newLabels', newLabels);
-                                                    setFieldsValue({ namespace_labels: newLabels });
-                                                } else {
-                                                    if (key !== '' && value !== '') {
-                                                        const newLabels = { ...metadata, [key]: value };
-                                                        console.log('newLabels', newLabels);
-                                                        setFieldsValue({ namespace_labels: newLabels });
-                                                    }
-                                                }
-                                            }}
-                                        />
-                                    </div>
-                                </FormItem>
-                            )
-                        }}
-                    </FormItem>
+                    <LabelInput form={form} label='命名空间标签' name='namespace_labels' disabled={false} />
                     <FormItem
                         label={'服务可见性'}
                         name={"visibility_mode"}
@@ -169,7 +147,7 @@ const NamespaceEditor: React.FC<NamespaceEditorProps> = ({ visible, modify, clos
                             )
                         }}
                     </FormItem>
-                    <FormItem style={{ marginLeft: 100, marginTop: 100 }}>
+                    <FormItem style={{ marginTop: 100 }}>
                         <Space>
                             <Button type="submit" theme="primary">
                                 提交

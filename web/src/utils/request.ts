@@ -1,6 +1,5 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import proxy from '../configs/host';
-import { randomUUID } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 
 const env = import.meta.env.MODE || 'development';

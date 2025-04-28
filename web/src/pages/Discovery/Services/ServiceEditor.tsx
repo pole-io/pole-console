@@ -25,6 +25,7 @@ const ServiceEditor: React.FC<IServiceEditorProps> = ({ visible, modify, closeDr
 
     const { id, name, namespace, comment, department, business, service_export_to, visibility_mode, metadata } = currentService;
     const [namespaceOptions, setNamespaceOptions] = useState<{ label: string, value: string }[]>([]);
+    const service_labels = metadata ? Object.entries(metadata).map(([key, value]) => ({ key, value })) : [];
 
     useEffect(() => {
         if (!visible) {
@@ -39,7 +40,7 @@ const ServiceEditor: React.FC<IServiceEditorProps> = ({ visible, modify, closeDr
                 department: department,
                 business: business,
                 service_export_to: service_export_to,
-                metadata: metadata,
+                service_labels: service_labels,
                 visibility_mode: { type: visibility_mode },
             });
             console.log('modify fieleds', form);
@@ -66,6 +67,9 @@ const ServiceEditor: React.FC<IServiceEditorProps> = ({ visible, modify, closeDr
         if (e.validateResult !== true) {
             return;
         }
+
+        const labels = form.getFieldValue('service_labels') as { key: string, value: string }[]
+
         const newData = {
             id: modify ? id : '',
             name: form.getFieldValue('name') as string,
@@ -74,7 +78,10 @@ const ServiceEditor: React.FC<IServiceEditorProps> = ({ visible, modify, closeDr
             department: form.getFieldValue('department') as string,
             business: form.getFieldValue('business') as string,
             service_export_to: form.getFieldValue('service_export_to') as string[],
-            metadata: form.getFieldValue('metadata') as Record<string, string>,
+            metadata: labels.reduce((acc: { [key: string]: string }, { key, value }) => {
+                acc[key] = value;
+                return acc;
+            }, {}),
             visibility_mode: form.getFieldValue('visibility_mode') as string,
             ports: '',
             owners: '',
@@ -91,8 +98,8 @@ const ServiceEditor: React.FC<IServiceEditorProps> = ({ visible, modify, closeDr
             openErrNotification('请求错误', result?.payload as string);
         } else {
             openInfoNotification('请求成功', modify ? '修改命名空间成功' : '创建命名空间成功');
+            closeDrawer();
         }
-        closeDrawer();
     };
 
     const namespaceForm = (
@@ -144,34 +151,7 @@ const ServiceEditor: React.FC<IServiceEditorProps> = ({ visible, modify, closeDr
             >
                 <Input />
             </FormItem>
-            <FormItem>
-                {({ getFieldValue, setFieldsValue }) => {
-                    return (
-                        <FormItem
-                            label={'标签'}
-                            name={"metadata"}
-                            style={{ width: '100%' }}>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                <LabelInput
-                                    labels={metadata}
-                                    onChange={(key: string, value: string, del: boolean) => {
-                                        if (del) {
-                                            const newLabels = { ...metadata };
-                                            delete newLabels[key];
-                                            setFieldsValue({ metadata: newLabels });
-                                        } else {
-                                            if (key !== '' && value !== '') {
-                                                const newLabels = { ...metadata, [key]: value };
-                                                setFieldsValue({ metadata: newLabels });
-                                            }
-                                        }
-                                    }}
-                                />
-                            </div>
-                        </FormItem>
-                    )
-                }}
-            </FormItem>
+            <LabelInput form={form} label='服务标签' name='service_labels' disabled={false} />
             <FormItem
                 label={'服务可见性'}
                 name={"visibility_mode"}
@@ -204,7 +184,7 @@ const ServiceEditor: React.FC<IServiceEditorProps> = ({ visible, modify, closeDr
                     )
                 }}
             </FormItem>
-            <FormItem style={{ marginLeft: 100, marginTop: 100 }}>
+            <FormItem style={{ marginTop: 100 }}>
                 <Space>
                     <Button type="submit" theme="primary">
                         提交

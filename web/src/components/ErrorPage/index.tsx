@@ -4,12 +4,14 @@ import { Button } from 'tdesign-react';
 import Light403Icon from 'assets/svg/assets-result-403.svg?component';
 import Light404Icon from 'assets/svg/assets-result-404.svg?component';
 import Light500Icon from 'assets/svg/assets-result-500.svg?component';
+import LightUnimplementIcon from 'assets/svg/assets-result-maintenance.svg?component';
 import style from './index.module.less';
 
-enum ECode {
+export enum ECode {
   forbidden = 403,
   notFount = 404,
   error = 500,
+  unimplemented = 501,
 }
 
 interface IErrorPageProps {
@@ -33,6 +35,11 @@ const errorInfo = {
     title: '500 Internal Server Error',
     desc: '抱歉，服务器出错啦！',
     icon: <Light500Icon />,
+  },
+  [ECode.unimplemented]: {
+    title: '501 Not Implemented',
+    desc: '抱歉，当前版本暂未支持，我们正在抓紧实现中。',
+    icon: <LightUnimplementIcon />,
   },
 };
 

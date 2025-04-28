@@ -1,84 +1,105 @@
-import { set } from 'lodash';
 import React, { useState } from 'react';
+import { FormProps } from 'react-router-dom';
 import { AddIcon, DeleteIcon } from 'tdesign-icons-react';
-import { Form, Input, Space, SubmitContext } from 'tdesign-react';
+import { Button, Form, Input, InputAdornment, Space } from 'tdesign-react';
+import type { CustomValidator, InternalFormInstance } from 'tdesign-react';
+
+const { FormItem, FormList } = Form;
 
 interface ILabelInputProps {
-    readonly?: boolean;
-    labels: Record<string, string>;
-    onChange?: (key: string, value: string, del: boolean) => void;
+    form?: InternalFormInstance;
+    name: string;
+    label: string;
+    disabled: boolean;
 }
 
 const LabelInput: React.FC<ILabelInputProps> = (props) => {
-    const [keyValuePairs, setKeyValuePairs] = useState(
-        props.labels ? Object.entries(props.labels).map(([key, value]) => ({ key, value })) : [{ key: '', value: '' }]
-    );
 
-    const handleKeyChange = (index: number, key: string, value: string) => {
-        const newKeyValuePairs = [...keyValuePairs];
-        newKeyValuePairs[index].key = key;
-        newKeyValuePairs[index].value = value;
-        setKeyValuePairs(newKeyValuePairs);
-        if (props.onChange) {
-            props.onChange(key, newKeyValuePairs[index].value, false);
+    const labelsValidator: CustomValidator = (val) => {
+        if (!props.form) {
+            return { result: true, message: '' };
         }
-    };
-
-    const handleValueChange = (index: number, key: string, value: string) => {
-        const newKeyValuePairs = [...keyValuePairs];
-        newKeyValuePairs[index].key = key;
-        newKeyValuePairs[index].value = value;
-        setKeyValuePairs(newKeyValuePairs);
-        if (props.onChange) {
-            props.onChange(newKeyValuePairs[index].key, value, false);
+        const labels = props.form.getFieldValue(props.name) as { key: string, value: string }[];
+        const keys = labels.map(label => label.key);
+        const hasDuplicate = keys.length !== new Set(keys).size;
+        if (hasDuplicate) {
+            return {
+                result: false,
+                type: 'error',
+                message: '标签 key 不能重复',
+            };
         }
-    };
-
-    const handleAddPair = () => {
-        setKeyValuePairs([...keyValuePairs, { key: '', value: '' }]);
-    };
-
-    const handleRemovePair = (index: number) => {
-        const newKeyValuePairs = [...keyValuePairs];
-        if (props.onChange) {
-            props.onChange(newKeyValuePairs[index].key, newKeyValuePairs[index].value, true);
-        }
-        newKeyValuePairs.splice(index, 1);
-        if (newKeyValuePairs.length === 0) {
-            newKeyValuePairs.push({ key: '', value: '' });
-        }
-        setKeyValuePairs(newKeyValuePairs);
+        return { result: true, message: '' };
     };
 
     return (
-        <>
-            {keyValuePairs.map((pair: { key: string; value: string }, index: number) => (
-                <div key={index} style={{ display: 'flex', marginBottom: '10px' }}>
-                    <Input
-                        placeholder="键"
-                        value={pair.key}
-                        onChange={(e) => handleKeyChange(index, e, pair.value)}
-                        style={{ flex: 1, marginRight: '10px' }}
-                        disabled={props.readonly}
-                        maxlength={128}
-                    />
-                    <Input
-                        placeholder="值"
-                        value={pair.value}
-                        onChange={(e) => handleValueChange(index, pair.key, e)}
-                        style={{ flex: 1, marginRight: '10px' }}
-                        disabled={props.readonly}
-                        maxlength={4096}
-                    />
-                    {!props.readonly && (
-                        <Space>
-                            <AddIcon onClick={() => handleAddPair()} />
-                            <DeleteIcon onClick={() => handleRemovePair(index)} />
-                        </Space>
-                    )}
-                </div>
-            ))}
-        </>
+        <div style={{ marginTop: 20 }}>
+            <FormList
+                name={props.name}
+                rules={[{ validator: labelsValidator }]}
+            >
+                {(fields, { add, remove }) => (
+                    <>
+                        {!fields || fields.length === 0 && (
+                            <>
+                                <FormItem label={`${props.label}`}>
+                                    {props.disabled ? null : (
+                                        <Space>
+                                            <AddIcon onClick={() => add()} />
+                                        </Space>
+                                    )}
+                                </FormItem>
+                            </>
+                        )}
+                        {fields.map(({ key, name, ...restField }, index) => (
+                            <FormItem key={key} label={index === 0 ? `${props.label}` : ' '}>
+                                <FormItem
+                                    key={'key-' + key}
+                                    {...restField}
+                                    name={[name, 'key']}
+                                    rules={[
+                                        { required: true, message: '标签不能为空' },
+                                        { max: 128, message: '长度不超过128个字符' },
+                                        { validator: labelsValidator },
+                                    ]}
+                                >
+                                    <InputAdornment prepend="键名称">
+                                        <Input readonly={props.disabled} />
+                                    </InputAdornment>
+                                </FormItem>
+                                <FormItem
+                                    key={'value-' + key}
+                                    {...restField}
+                                    name={[name, 'value']}
+                                    rules={[
+                                        { required: true, message: '值不能为空' },
+                                        { max: 4096, message: '长度不超过4096个字符' },
+                                    ]}
+                                >
+                                    <InputAdornment prepend="键值">
+                                        <Input readonly={props.disabled} />
+                                    </InputAdornment>
+                                </FormItem>
+                                {props.disabled ? null : (
+                                    <FormItem>
+                                        <Button onClick={() => remove(name)} disabled={props.disabled}>
+                                            <DeleteIcon />
+                                        </Button>
+                                    </FormItem>
+                                )}
+                                {props.disabled ? null : (
+                                    <Space>
+                                        <Button onClick={() => add()} disabled={props.disabled}>
+                                            <AddIcon />
+                                        </Button>
+                                    </Space>
+                                )}
+                            </FormItem>
+                        ))}
+                    </>
+                )}
+            </FormList>
+        </div>
     );
 };
 

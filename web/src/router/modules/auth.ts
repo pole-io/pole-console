@@ -26,9 +26,26 @@ const auth: IRouter[] = [
       },
       {
         path: 'policies',
-        Component: lazy(() => import('pages/Auth/Policy')),
+        Component: lazy(() => import('pages/Auth/Policy/index')),
         meta: {
           title: '策略管理',
+        },
+      },
+      // 这里的路由是为了在服务列表中点击实例跳转到实例详情页
+      {
+        path: 'users/detail',
+        Component: lazy(() => import('pages/Auth/User/UserDetail')),
+        isFullPage: false,
+        meta: {
+          hidden: true,
+        },
+      },
+      {
+        path: 'policies/detail',
+        Component: lazy(() => import('pages/Auth/Policy/PolicyDetail')),
+        isFullPage: false,
+        meta: {
+          hidden: true,
         },
       },
     ],
