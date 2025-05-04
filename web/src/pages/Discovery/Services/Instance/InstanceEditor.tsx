@@ -17,12 +17,13 @@ interface IInstanceEditorProps {
     modify: boolean;
     op: string;
     closeDrawer: () => void;
+    refresh: () => void;
     visible: boolean;
 }
 
 const HealthCheckTypeOptions = [{ label: '心跳上报', value: 1 }, { label: 'TCP 探测', value: 2, disabled: true }, { label: 'HTTTP 探测', value: 3, disabled: true }]
 
-const InstanceEditor: React.FC<IInstanceEditorProps> = ({ visible, op, modify, closeDrawer }) => {
+const InstanceEditor: React.FC<IInstanceEditorProps> = ({ visible, op, modify, closeDrawer, refresh }) => {
     const [form] = Form.useForm();
     const dispatch = useAppDispatch();
     const currentInstance = useAppSelector(selectInstance);
@@ -103,8 +104,9 @@ const InstanceEditor: React.FC<IInstanceEditorProps> = ({ visible, op, modify, c
             openErrNotification('请求错误', result?.payload as string);
         } else {
             openInfoNotification('请求成功', modify ? '修改服务实例成功' : '创建服务实例成功');
+            closeDrawer();
+            refresh();
         }
-        closeDrawer();
     };
 
     const instanceForm = (
@@ -235,7 +237,14 @@ const InstanceEditor: React.FC<IInstanceEditorProps> = ({ visible, op, modify, c
 
     return (
         <div>
-            <Drawer size='large' header={op === 'view' ? '详细' : modify ? "编辑" : "创建"} footer={false} visible={visible} showOverlay={false} onClose={closeDrawer}>
+            <Drawer
+                size='large'
+                header={op === 'view' ? '详细' : modify ? "编辑" : "创建"}
+                footer={false}
+                visible={visible}
+                showOverlay={false}
+                onClose={closeDrawer}
+            >
                 {instanceForm}
             </Drawer>
         </div>

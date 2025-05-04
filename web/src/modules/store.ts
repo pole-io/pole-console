@@ -9,7 +9,10 @@ import namespace from './namespace';
 import discoveryService from './discovery/service';
 import discoveryServiceAlais from './discovery/alias';
 import discoveryInstance from './discovery/instance';
+import configGroup from './configuration/group';
+import configFile from './configuration/file';
 import authPolicyRules from './auth/policy';
+import authRoles from './auth/role';
 
 const reducer = combineReducers({
   global,
@@ -20,7 +23,10 @@ const reducer = combineReducers({
   discoveryService,
   discoveryServiceAlais,
   discoveryInstance,
+  configGroup,
+  configFile,
   authPolicyRules,
+  authRoles,
 });
 
 export const store = configureStore({

@@ -1,12 +1,9 @@
-import React, { memo } from 'react';
-import TopChart from './components/TopChart';
-import BottomTable from './components/BottomTable';
+import React, { memo, useRef } from 'react';
+import ErrorPage, { ECode } from 'components/ErrorPage';
 
-const Deploy = () => (
-  <div>
-    <TopChart />
-    <BottomTable />
-  </div>
-);
 
-export default memo(Deploy);
+export default memo(() => {
+  return (
+    <ErrorPage code={ECode.unimplemented} />
+  );
+});

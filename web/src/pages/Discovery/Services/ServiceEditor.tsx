@@ -15,10 +15,11 @@ const { FormItem } = Form;
 interface IServiceEditorProps {
     modify: boolean;
     closeDrawer: () => void;
+    refresh: () => void;
     visible: boolean;
 }
 
-const ServiceEditor: React.FC<IServiceEditorProps> = ({ visible, modify, closeDrawer }) => {
+const ServiceEditor: React.FC<IServiceEditorProps> = ({ visible, modify, closeDrawer, refresh }) => {
     const [form] = Form.useForm();
     const dispatch = useAppDispatch();
     const currentService = useAppSelector(selectService);
@@ -99,6 +100,7 @@ const ServiceEditor: React.FC<IServiceEditorProps> = ({ visible, modify, closeDr
         } else {
             openInfoNotification('请求成功', modify ? '修改命名空间成功' : '创建命名空间成功');
             closeDrawer();
+            refresh();
         }
     };
 
@@ -199,7 +201,14 @@ const ServiceEditor: React.FC<IServiceEditorProps> = ({ visible, modify, closeDr
 
     return (
         <div>
-            <Drawer size='large' header={modify ? "编辑" : "创建"} footer={false} visible={visible} showOverlay={false} onClose={closeDrawer}>
+            <Drawer
+                size='large'
+                header={modify ? "编辑" : "创建"}
+                footer={false}
+                visible={visible}
+                showOverlay={false}
+                onClose={closeDrawer}
+            >
                 {namespaceForm}
             </Drawer>
         </div>

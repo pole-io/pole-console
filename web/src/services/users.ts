@@ -41,6 +41,8 @@ export interface User {
     mobile: string
     // 用户标签
     metadata: Record<string, string>
+    // 用户类型
+    user_type?: string
 }
 
 // 删除用户
@@ -93,6 +95,14 @@ export async function describeUsers(params: DescribeUsersRequest) {
         totalCount: result.amount,
         content: result.users ? result.users : [],
     }
+}
+
+export async function describeAllUsers() {
+    const { list: users } = await getAllList(describeUsers, {
+        listKey: 'content',
+        totalKey: 'totalCount',
+    })({})
+    return users
 }
 
 // 查询用户Token
@@ -198,7 +208,7 @@ export interface CreateUsersRequest {
     comment: string
     mobile?: string
     email?: string
-    source: string
+    source?: string
 }
 
 export interface CreateUsersResponse {

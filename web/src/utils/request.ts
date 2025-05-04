@@ -104,7 +104,6 @@ export async function getApiRequest<T>(options: APIRequestOption) {
         }
         throw error;
       })) as AxiosResponse<T & ApiResponse>
-
     return res.data
   } catch (e) {
     throw e
@@ -214,8 +213,10 @@ export function getAllList(fetchFun: (params?: any) => Promise<any>, options: Fe
         [fetchOptions.limitKey]: pageSize,
       } as any)
 
-      allList = allList.concat(result[fetchOptions.listKey])
-
+      const cur = result[fetchOptions.listKey]
+      if (cur && cur.length !== 0) {
+        allList = allList.concat(cur)
+      }
       if (allList.length >= result[fetchOptions.totalKey]) {
         // 返回
         break

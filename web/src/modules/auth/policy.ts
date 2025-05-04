@@ -1,25 +1,24 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../store';
-import { PolicyResources, Principals } from 'services/auth_policy';
+import { createAuthPolicies, PolicyResources, Principals } from 'services/auth_policy';
 
 
 // State 和 Action 类型定义
 export interface PolicyRuleState {
     // 策略唯一ID
-    id: string
+    id?: string
     // 策略名称
     name: string
-    // 涉及的用户 or 用户组
-    principals: Principals
     // 资源操作权限
     action: string
+    // 涉及的用户 or 用户组
+    principals?: Principals
     // 简单描述
-    comment: string
+    comment?: string
     // 策略关联的资源
     resources?: PolicyResources
+    // 是否默认策略
     default_strategy?: boolean
-    // 鉴权规则来源
-    source?: string
     // 服务端接口
     functions?: string[]
     // 策略生效的资源标签
@@ -39,7 +38,6 @@ const initialState: PolicyRuleState = {
     comment: '',
     resources: {},
     default_strategy: false,
-    source: 'pole.io',
     functions: [],
     resource_labels: [],
     metadata: {}
@@ -48,6 +46,7 @@ const initialState: PolicyRuleState = {
 
 export const savePolicyRules = createAsyncThunk(`policy/create`, async ({ state }: { state: PolicyRuleState }, { fulfillWithValue, rejectWithValue }) => {
     try {
+        const ret = await createAuthPolicies([{ ...state, source: 'pole.io' }]);
         return fulfillWithValue("ok"); // 返回 token
     } catch (error) {
         return rejectWithValue((error as Error).message); // 捕获错误并返回
@@ -88,7 +87,7 @@ export const {
     editorPolicyRules,
     resetPolicyRules,
 } = policyRuleReducer.actions;
-export const selectPolicyRule = (state: RootState) => state.discoveryServiceAlais;
+export const selectPolicyRule = (state: RootState) => state.authPolicyRules;
 
 
 export default policyRuleReducer.reducer;

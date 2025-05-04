@@ -12,10 +12,11 @@ const { FormItem } = Form;
 interface IServiceEditorProps {
     modify: boolean;
     closeDrawer: () => void;
+    refresh: () => void;
     visible: boolean;
 }
 
-const ServiceAliasEditor: React.FC<IServiceEditorProps> = ({ visible, modify, closeDrawer }) => {
+const ServiceAliasEditor: React.FC<IServiceEditorProps> = ({ visible, modify, closeDrawer, refresh }) => {
     const [form] = Form.useForm();
     const dispatch = useAppDispatch();
     const currentAlias = useAppSelector(selectServiceAlias);
@@ -74,6 +75,7 @@ const ServiceAliasEditor: React.FC<IServiceEditorProps> = ({ visible, modify, cl
         if (result.meta.requestStatus === 'fulfilled') {
             openInfoNotification('操作成功', modify ? '修改服务别名成功' : '创建服务别名成功');
             closeDrawer();
+            refresh();
         } else {
             openErrNotification('操作失败', result?.payload as string);
         }
@@ -124,7 +126,14 @@ const ServiceAliasEditor: React.FC<IServiceEditorProps> = ({ visible, modify, cl
     return (
         <>
             <div>
-                <Drawer size='large' header={modify ? "编辑" : "创建"} footer={false} visible={visible} showOverlay={false} onClose={closeDrawer}>
+                <Drawer
+                    size='large'
+                    header={modify ? "编辑" : "创建"}
+                    footer={false}
+                    visible={visible}
+                    showOverlay={false}
+                    onClose={closeDrawer}
+                >
                     {aliasForm}
                 </Drawer>
             </div>

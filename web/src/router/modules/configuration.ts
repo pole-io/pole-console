@@ -27,6 +27,15 @@ const configuration: IRouter[] = [
         Component: lazy(() => import('pages/Configuration/Kubernetes')),
         meta: { title: 'ConfigMap' },
       },
+      // 这里的路由是为了在服务列表中点击实例跳转到实例详情页
+      {
+        path: 'group/files',
+        Component: lazy(() => import('pages/Configuration/Group/Files')),
+        isFullPage: false,
+        meta: {
+          hidden: true,
+        },
+      },
     ],
   },
 ];

@@ -1,14 +1,9 @@
-import React, { memo } from 'react';
-import Base from './components/Base';
-import ProgressComp from './components/Progress';
-import Product from './components/Product';
-import Detail from './components/Detail';
+import React, { memo, useRef } from 'react';
+import ErrorPage, { ECode } from 'components/ErrorPage';
 
-export default memo(() => (
-  <div>
-    <Base />
-    <ProgressComp />
-    <Product />
-    <Detail />
-  </div>
-));
+
+export default memo(() => {
+  return (
+    <ErrorPage code={ECode.unimplemented} />
+  );
+});

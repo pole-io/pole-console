@@ -40,7 +40,7 @@ export interface GroupRelation {
     // 用户组ID
     group_id?: string
     // 用户ID数组
-    users?: User[]
+    users?: { id: string, name?: string }[]
 }
 
 // 重置用户组Token
@@ -99,6 +99,14 @@ export async function describeUserGroups(params: DescribeUserGroupsRequest) {
         totalCount: result.amount,
         content: result.userGroups ? result.userGroups : [],
     }
+}
+
+export async function describeAllUserGroups() {
+    const { list: userGroups } = await getAllList(describeUserGroups, {
+        listKey: 'content',
+        totalKey: 'totalCount',
+    })({})
+    return userGroups
 }
 
 // 查询治理中心用户组详细
@@ -198,7 +206,27 @@ export interface ModifyUserGroupTokenResponse {
 
 export async function modifyUserGroupToken(params: ModifyUserGroupTokenRequest) {
     const result = await putApiRequest<ModifyUserGroupTokenResponse>({
-        action: '/auth/v1/usergroup/token/status',
+        action: '/auth/v1/usergroup/token/enable',
+        data: params,
+    })
+    return Number(result.code) === SuccessCode
+}
+
+
+// 修改用户Token
+export interface RefreshUserGroupTokenRequest {
+    // 用户Token信息
+    id: string
+}
+
+export interface RefreshUserGroupTokenResponse {
+    // 执行结果
+    result: boolean
+}
+
+export async function refreshUserGroupToken(params: RefreshUserGroupTokenRequest) {
+    const result = await putApiRequest<RefreshUserGroupTokenResponse>({
+        action: '/auth/v1/usergroup/token/refresh',
         data: params,
     })
     return Number(result.code) === SuccessCode

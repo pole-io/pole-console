@@ -10,8 +10,6 @@ export interface UserState {
     name: string
     // 用户密码
     password: string
-    // 用户来源
-    source: string
     // 用户鉴权Token
     auth_token?: string
     // 该token是否被禁用
@@ -30,7 +28,6 @@ const initialState: UserState = {
     id: '',
     name: '',
     password: '',
-    source: '',
     auth_token: '',
     token_enable: false,
     comment: '',

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, Popup, Table, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData, Tabs, Tag, Dialog, Input } from 'tdesign-react';
+import { Link, Popup, Table, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData, Tabs, Tag, Dialog, Input, Loading } from 'tdesign-react';
 import { DeleteIcon, EditIcon, RefreshIcon, UserVisibleIcon } from 'tdesign-icons-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -45,7 +45,8 @@ const columns = (handleEditUser: (row: TableRowData, op: 'view' | 'create' | 'ed
     {
         colKey: 'commnet',
         title: '描述',
-        ellipsis: ({ row: { comment } }: TableRowData) => (<Text>{comment || '-'}</Text>),
+        ellipsis: true,
+        cell: ({ row: { comment } }: TableRowData) => (<Text>{comment || '-'}</Text>),
     },
     {
         colKey: 'token_enable',
@@ -138,7 +139,6 @@ const UsersTable: React.FC<IUsersProps> = ({ }) => {
             id: row.id as string,
             name: row.name as string,
             password: '',
-            source: row.source as string,
             token_enable: row.token_enable as boolean,
             comment: row.comment as string,
             email: row.email as string,
@@ -149,15 +149,15 @@ const UsersTable: React.FC<IUsersProps> = ({ }) => {
         if (mode === 'delete') {
             setSearchState(s => ({ ...s, isLoading: true }));
             dispatch(removeUsers({ ids: [row.id as string] }))
-            .then((res) => { 
-                openInfoNotification("删除用户成功", "删除用户成功");
-             })
-            .catch((err) => {
-                openErrNotification("删除用户失败", err);
-            })
-            .finally(() => {
-                setSearchState(s => ({ ...s, isLoading: false }));
-            });
+                .then((res) => {
+                    openInfoNotification("删除用户成功", "删除用户成功");
+                })
+                .catch((err) => {
+                    openErrNotification("删除用户失败", err);
+                })
+                .finally(() => {
+                    setSearchState(s => ({ ...s, isLoading: false }));
+                });
             return;
         }
 
@@ -198,6 +198,11 @@ const UsersTable: React.FC<IUsersProps> = ({ }) => {
         fetchData({ current: 1, pageSize: searchState.limit, previous: 0 });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const refreshTables = () => {
+        setSearchState(s => ({ ...s, fetchError: false, isLoading: true }));
+        fetchData({ current: 1, pageSize: searchState.limit, previous: 0 }, searchState.query);
+    }
 
     const table = (
         <>
@@ -244,15 +249,11 @@ const UsersTable: React.FC<IUsersProps> = ({ }) => {
                 key={editorState.mode + (editorState.data?.name || 'new') + (editorState.visible ? '1' : '0')}
                 modify={editorState.mode === 'edit'}
                 visible={editorState.visible && editorState.resource === 'user'}
+                refresh={refreshTables}
                 closeDrawer={() => {
                     // 关闭后重置编辑器状态
                     dispatch(resetUser());
                     setEditorState(s => ({ ...s, visible: false }));
-                    // 重新加载数据
-                    console.log('重新加载数据');
-                    setTimeout(() => {
-                        fetchData({ current: searchState.current, pageSize: searchState.limit, previous: searchState.previous }, searchState.query);
-                    }, 1000);
                 }} op={editorState.mode} />
             <Table
                 data={searchState.users}
@@ -290,7 +291,9 @@ const UsersTable: React.FC<IUsersProps> = ({ }) => {
             {searchState.fetchError ? (
                 <ServerError />
             ) : (
-                table
+                <Loading loading={searchState.isLoading}>
+                    {table}
+                </Loading>
             )}
         </>
     )

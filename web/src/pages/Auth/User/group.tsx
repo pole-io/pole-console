@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, Popup, Table, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData, Tabs, Tag } from 'tdesign-react';
+import { Link, Popup, Table, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData, Tabs, Tag, Loading } from 'tdesign-react';
 import { DeleteIcon, EditIcon, RefreshIcon, CreditcardIcon } from 'tdesign-icons-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -11,6 +11,8 @@ import { openErrNotification } from 'utils/notifition';
 import style from './index.module.less';
 import { describeUsers } from 'services/users';
 import { describeUserGroups } from 'services/user_group';
+import ShowToken from './ShowToken';
+import GroupEditor from './GroupEditor';
 
 interface IUsersProps {
 
@@ -18,7 +20,7 @@ interface IUsersProps {
 
 const ServerError = () => <ErrorPage code={500} />;
 
-const columns = (handleEditUser: (row: TableRowData) => void): PrimaryTableProps['columns'] => [
+const columns = (handleEditUser: (row: TableRowData) => void, redirect: (id: string, name: string) => void): PrimaryTableProps['columns'] => [
     {
         colKey: 'id',
         title: 'ID',
@@ -27,18 +29,21 @@ const columns = (handleEditUser: (row: TableRowData) => void): PrimaryTableProps
     },
     {
         colKey: 'name',
-        title: '用户名',
-        cell: ({ row: { name } }) => <Text>{name}</Text>,
+        title: '名称',
+        cell: ({ row: { name, id } }) => (
+            <Link theme='primary' onClick={() => redirect(id, name)}>{name}</Link>
+        ),
     },
     {
         colKey: 'commnet',
         title: '描述',
-        ellipsis: ({ row: { comment } }: TableRowData) => (<Text>{comment || '-'}</Text>),
+        ellipsis: true,
+        cell: ({ row: { comment } }: TableRowData) => (<Text>{comment || '-'}</Text>),
     },
     {
         colKey: 'token_enable',
         title: 'Token 状态',
-        ellipsis: ({ row: { token_enable } }: TableRowData) => (<Tag theme={token_enable ? 'success' : 'danger'}>{token_enable ? '启用' : '禁用'}</Tag>),
+        cell: ({ row: { token_enable } }: TableRowData) => (<Tag theme={token_enable ? 'success' : 'danger'}>{token_enable ? '启用' : '禁用'}</Tag>),
     },
     {
         colKey: 'time',
@@ -105,7 +110,8 @@ const GroupsTable: React.FC<IUsersProps> = ({ }) => {
         visible: boolean;
         mode: 'create' | 'edit';
         data?: TableRowData;
-    }>({ visible: false, mode: 'create', data: undefined });
+        resource: 'group' | 'group_token';
+    }>({ visible: false, mode: 'create', data: undefined, resource: 'group' });
 
     // 编辑、新建事件
     const handleEditUserGroup = (row: TableRowData) => {
@@ -113,6 +119,7 @@ const GroupsTable: React.FC<IUsersProps> = ({ }) => {
             visible: true,
             mode: 'edit',
             data: { ...row },
+            resource: 'group',
         })
     }
 
@@ -121,6 +128,7 @@ const GroupsTable: React.FC<IUsersProps> = ({ }) => {
             visible: true,
             mode: 'create',
             data: undefined,
+            resource: 'group',
         });
     };
 
@@ -144,6 +152,11 @@ const GroupsTable: React.FC<IUsersProps> = ({ }) => {
         fetchData({ current: 1, pageSize: searchState.limit, previous: 0 });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const refreshTables = () => {
+        setSearchState(s => ({ ...s, fetchError: false, isLoading: true }));
+        fetchData({ current: 1, pageSize: searchState.limit, previous: 0 }, searchState.query);
+    }
 
     const table = (
         <>
@@ -179,9 +192,27 @@ const GroupsTable: React.FC<IUsersProps> = ({ }) => {
                     </Space>
                 </Col>
             </Row>
+            <ShowToken
+                key={editorState.mode + editorState.data?.name + '_showtoken'}
+                row={editorState.data || {} as TableRowData}
+                visible={editorState.visible && editorState.resource === 'group_token'}
+                close={() => {
+                    setEditorState(s => ({ ...s, resource: 'group_token', visible: false }))
+                }} />
+            <GroupEditor
+                key={editorState.mode + (editorState.data?.name || 'new') + (editorState.visible ? '1' : '0')}
+                modify={editorState.mode === 'edit'}
+                visible={editorState.visible && editorState.resource === 'group'}
+                refresh={refreshTables}
+                closeDrawer={() => {
+                    // 关闭后重置编辑器状态
+                    setEditorState(s => ({ ...s, visible: false }));
+                }} op={editorState.mode} />
             <Table
                 data={searchState.groups}
-                columns={columns(handleEditUserGroup)}
+                columns={columns(handleEditUserGroup, (id: string, name: string) => {
+                    navigate(`detail?id=${id}&name=${name}`);
+                })}
                 loading={searchState.isLoading}
                 rowKey="id"
                 size={"large"}

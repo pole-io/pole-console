@@ -59,8 +59,8 @@ const columns = (handleEditService: (row: TableRowData) => void, redirect: (serv
     {
         colKey: 'commnet',
         title: '描述',
-        // ellipsis 定义超出省略的浮层内容，cell 定义单元格内容
-        ellipsis: ({ row: { comment } }: TableRowData) => (<Text>{comment || '-'}</Text>),
+        ellipsis: true,
+        cell: ({ row: { comment } }: TableRowData) => (<Text>{comment || '-'}</Text>),
     },
     {
         colKey: 'time',
@@ -148,6 +148,11 @@ const ServiceAliasTable: React.FC<IServiceAliasProps> = ({ }) => {
         });
     };
 
+    const refreshTable = () => {
+        setSearchState(s => ({ ...s, fetchError: false, isLoading: true }));
+        fetchData({ current: 1, pageSize: searchState.limit, previous: 0 }, searchState.query);
+    }
+
     // 模拟远程请求
     async function fetchData(pageInfo: PageInfo, searchParam?: string) {
         setSearchState(s => ({ ...s, current: pageInfo.current, limit: pageInfo.pageSize, previous: pageInfo.previous, fetchError: false, isLoading: true }));
@@ -208,14 +213,11 @@ const ServiceAliasTable: React.FC<IServiceAliasProps> = ({ }) => {
                 key={editorState.mode + (editorState.data?.name || 'new') + (editorState.visible ? '1' : '0')}
                 modify={editorState.mode === 'edit'}
                 visible={editorState.visible}
+                refresh={refreshTable}
                 closeDrawer={() => {
                     // 关闭后重置编辑器状态
                     dispatch(resetServiceAlias());
                     setEditorState(s => ({ ...s, visible: false }));
-                    setSearchState(s => ({ ...s, fetchError: false, isLoading: true }));
-                    setTimeout(() => {
-                        fetchData({ current: 1, pageSize: searchState.limit, previous: 0 }, searchState.query);
-                    }, 1000);
                 }} />
             <Table
                 data={searchState.services}

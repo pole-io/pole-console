@@ -176,9 +176,9 @@ export interface CreateAuthPoliciesRequest {
     // 策略名称
     name: string
     // 涉及的用户 or 用户组
-    principals?: Principal
+    principals?: Principals
     // 资源操作权限
-    action?: string
+    action: string
     // 简单描述
     comment?: string
     // 策略关联的资源
@@ -198,7 +198,7 @@ export interface CreateAuthPoliciesResponse {
     result: boolean
 }
 
-export async function createAuthPolicies(params: CreateAuthPoliciesRequest) {
+export async function createAuthPolicies(params: CreateAuthPoliciesRequest[]) {
     const result = await apiRequest<CreateAuthPoliciesResponse>({ action: '/auth/v1/policies', data: params })
     return Number(result.code) === SuccessCode
 }

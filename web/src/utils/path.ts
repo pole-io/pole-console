@@ -10,3 +10,13 @@ export const resolve = (path1 = '', path2 = '') => {
   }
   return `${path1}${separator}${path2}`;
 };
+
+
+export const resolveFileFormat = (filename?: string): string => {
+  if (!filename) return 'text';
+  const parts = filename.split('.');
+  if (parts.length > 1 && parts[parts.length - 1]) {
+      return parts[parts.length - 1];
+  }
+  return 'text';
+}

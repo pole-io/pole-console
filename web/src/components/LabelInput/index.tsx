@@ -63,9 +63,12 @@ const LabelInput: React.FC<ILabelInputProps> = (props) => {
                                         { validator: labelsValidator },
                                     ]}
                                 >
-                                    <InputAdornment prepend="键名称">
+                                    <InputAdornment prepend="key">
                                         <Input readonly={props.disabled} />
                                     </InputAdornment>
+                                </FormItem>
+                                <FormItem>
+                                    
                                 </FormItem>
                                 <FormItem
                                     key={'value-' + key}
@@ -76,22 +79,18 @@ const LabelInput: React.FC<ILabelInputProps> = (props) => {
                                         { max: 4096, message: '长度不超过4096个字符' },
                                     ]}
                                 >
-                                    <InputAdornment prepend="键值">
+                                    <InputAdornment prepend="value">
                                         <Input readonly={props.disabled} />
                                     </InputAdornment>
                                 </FormItem>
                                 {props.disabled ? null : (
                                     <FormItem>
-                                        <Button onClick={() => remove(name)} disabled={props.disabled}>
-                                            <DeleteIcon />
-                                        </Button>
+                                        <Button size='small' variant='text' icon={<DeleteIcon />} onClick={() => remove(name)} disabled={props.disabled} />
                                     </FormItem>
                                 )}
                                 {props.disabled ? null : (
                                     <Space>
-                                        <Button onClick={() => add()} disabled={props.disabled}>
-                                            <AddIcon />
-                                        </Button>
+                                        <Button  size='small' variant='text' icon={<AddIcon />} onClick={() => add()} disabled={props.disabled} />
                                     </Space>
                                 )}
                             </FormItem>

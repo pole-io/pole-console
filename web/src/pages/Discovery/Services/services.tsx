@@ -4,7 +4,6 @@ import { DeleteIcon, EditIcon, RefreshIcon, ChevronRightCircleIcon, CreditcardIc
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import Search from 'components/Search';
-import LabelInput from 'components/LabelInput';
 import ErrorPage from 'components/ErrorPage';
 import Text from 'components/Text';
 import { useAppDispatch, useAppSelector } from 'modules/store';
@@ -12,10 +11,8 @@ import { describeServices } from 'services/service';
 import { openErrNotification } from 'utils/notifition';
 import { CheckVisibilityMode, VisibilityModeMap } from 'utils/visible';
 import ServiceEditor from './ServiceEditor';
-import FormItem from 'tdesign-react/es/form/FormItem';
 import style from './index.module.less';
 import { editorService, resetService } from 'modules/discovery/service';
-import TabPanel from 'tdesign-react/es/tabs/TabPanel';
 
 const ServerError = () => <ErrorPage code={500} />;
 
@@ -89,6 +86,12 @@ const columns = (handleEditService: (row: TableRowData) => void, redirect: (serv
         ),
     },
     {
+        colKey: 'commnet',
+        title: '描述',
+        ellipsis: true,
+        cell: ({ row: { comment } }: TableRowData) => (<Text>{comment || '-'}</Text>),
+    },
+    {
         colKey: 'time',
         title: '操作时间',
         cell: ({ row: { ctime, mtime } }: TableRowData) => <Text>修改: {mtime}<br />创建: {ctime}</Text>,
@@ -149,7 +152,7 @@ const ServicesTable: React.FC<IServicesProps> = ({ }) => {
     // 合并编辑相关状态
     const [editorState, setEditorState] = useState<{
         visible: boolean;
-        mode: 'create' | 'edit';
+        mode: 'create' | 'edit' | 'delete';
         data?: TableRowData;
     }>({ visible: false, mode: 'create', data: undefined });
 
@@ -206,6 +209,11 @@ const ServicesTable: React.FC<IServicesProps> = ({ }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const refreshTable = () => {
+        setSearchState(s => ({ ...s, fetchError: false, isLoading: true }));
+        fetchData({ current: 1, pageSize: searchState.limit, previous: 0 }, searchState.query);
+    }
+
     {/* <!-- :defaultExpandedRowKeys="defaultExpandedRowKeys" --> */ }
     const table = (
         <>
@@ -245,14 +253,11 @@ const ServicesTable: React.FC<IServicesProps> = ({ }) => {
                 key={editorState.mode + (editorState.data?.name || 'new') + (editorState.visible ? '1' : '0')}
                 modify={editorState.mode === 'edit'}
                 visible={editorState.visible}
+                refresh={refreshTable}
                 closeDrawer={() => {
                     // 关闭后重置编辑器状态
                     dispatch(resetService());
                     setEditorState(s => ({ ...s, visible: false }));
-                    setSearchState(s => ({ ...s, fetchError: false, isLoading: true }));
-                    setTimeout(() => {
-                        fetchData({ current: 1, pageSize: searchState.limit, previous: 0 }, searchState.query);
-                    }, 1000);
                 }} />
             <Table
                 data={searchState.services}

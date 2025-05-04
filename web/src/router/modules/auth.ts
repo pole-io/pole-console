@@ -26,7 +26,7 @@ const auth: IRouter[] = [
       },
       {
         path: 'policies',
-        Component: lazy(() => import('pages/Auth/Policy/index')),
+        Component: lazy(() => import('pages/Auth/Policy')),
         meta: {
           title: '策略管理',
         },

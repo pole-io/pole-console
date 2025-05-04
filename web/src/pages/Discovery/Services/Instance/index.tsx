@@ -159,6 +159,11 @@ export default React.memo((props: IInstanceListProps & BrowserRouterProps) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const refreshTable = () => {
+        setSearchState(s => ({ ...s, fetchError: false, isLoading: true }));
+        fetchData({ current: 1, pageSize: searchState.limit, previous: 0 }, searchState.query);
+    }
+
     // 编辑、新建事件
     const handleEditInstance = (view: boolean, row: TableRowData) => {
         dispatch(editorInstance({
@@ -241,14 +246,13 @@ export default React.memo((props: IInstanceListProps & BrowserRouterProps) => {
                 modify={editState.mode === 'edit'}
                 op={editState.mode}
                 visible={editState.visible}
+                refresh={refreshTable}
                 closeDrawer={() => {
                     // 关闭后重置编辑器状态
                     dispatch(resetInstance());
                     setEditState(s => ({ ...s, visible: false }));
                     setSearchState(s => ({ ...s, fetchError: false, isLoading: true }));
-                    setTimeout(() => {
-                        fetchData({ current: 1, pageSize: searchState.limit, previous: 0 }, searchState.query);
-                    }, 1000);
+                    fetchData({ current: 1, pageSize: searchState.limit, previous: 0 }, searchState.query);
                 }} />
             <Table
                 data={searchState.instances}

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { describeComplicatedNamespaces } from 'services/namespace';
-import { Table, Popup, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData } from 'tdesign-react';
+import { Table, Popup, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData, Loading } from 'tdesign-react';
 import { DeleteIcon, EditIcon, RefreshIcon, ChevronRightCircleIcon, CreditcardIcon } from 'tdesign-icons-react';
 
 import { useAppDispatch, useAppSelector } from 'modules/store';
@@ -10,11 +10,8 @@ import Text from 'components/Text';
 import { CheckVisibilityMode, VisibilityModeMap } from 'utils/visible';
 import NamespaceEditor from './NamespaceEditor';
 import Search from 'components/Search';
-import LabelInput from 'components/LabelInput';
-import FormItem from 'tdesign-react/es/form/FormItem';
 import style from './index.module.less';
 import { editorNamespace } from 'modules/namespace';
-import { set } from 'lodash';
 
 const ServerError = () => <ErrorPage code={500} />;
 
@@ -65,8 +62,8 @@ const columns = (handleEditNamespace: (row: TableRowData) => void): PrimaryTable
     {
         colKey: 'commnet',
         title: '描述',
-        // ellipsis 定义超出省略的浮层内容，cell 定义单元格内容
-        ellipsis: ({ row: { comment } }: TableRowData) => (<Text>{comment || '-'}</Text>),
+        ellipsis: true,
+        cell: ({ row: { comment } }: TableRowData) => (<Text>{comment || '-'}</Text>),
     },
     {
         colKey: 'totalSerivce',
@@ -165,6 +162,11 @@ export default React.memo(() => {
         });
     };
 
+    const refreshTable = () => {
+        setSearchState(s => ({ ...s, fetchError: false, isLoading: true }));
+        fetchData({ current: 1, pageSize: searchState.limit, previous: 0 }, searchState.query);
+    }
+
     // 模拟远程请求
     async function fetchData(pageInfo: PageInfo, searchParam?: string) {
         console.log('fetchData', pageInfo, searchParam);
@@ -226,7 +228,10 @@ export default React.memo(() => {
                 key={editorState.mode + (editorState.data?.name || 'new') + (editorState.visible ? '1' : '0')}
                 modify={editorState.mode === 'edit'}
                 visible={editorState.visible}
-                closeDrawer={() => setEditorState(s => ({ ...s, visible: false }))} />
+                refresh={refreshTable}
+                closeDrawer={() => {
+                    setEditorState(s => ({ ...s, visible: false }))
+                }} />
             <Table
                 data={searchState.namespaces}
                 columns={columns(handleEditNamespace)}
@@ -261,7 +266,9 @@ export default React.memo(() => {
             {searchState.fetchError ? (
                 <ServerError />
             ) : (
-                table
+                <Loading loading={searchState.isLoading}>
+                    {table}
+                </Loading>
             )}
         </div>
     )

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Drawer, Form, Input, Space, Button, InputNumber, Radio, Switch, Select } from "tdesign-react";
 import type { FormProps } from 'tdesign-react';
-import { Icon } from 'tdesign-icons-react';
 
 import { useAppDispatch, useAppSelector } from 'modules/store';
 import { openErrNotification, openInfoNotification } from 'utils/notifition';
@@ -16,10 +15,11 @@ interface IUserEditorProps {
     modify: boolean;
     op: string;
     closeDrawer: () => void;
+    refresh: () => void;
     visible: boolean;
 }
 
-const UserEditor: React.FC<IUserEditorProps> = ({ visible, op, modify, closeDrawer }) => {
+const UserEditor: React.FC<IUserEditorProps> = ({ visible, op, modify, closeDrawer, refresh }) => {
     const [form] = Form.useForm();
     const dispatch = useAppDispatch();
     const currentUser = useAppSelector(selectUser);
@@ -29,13 +29,20 @@ const UserEditor: React.FC<IUserEditorProps> = ({ visible, op, modify, closeDraw
         token_enable,
         password,
         comment,
-        source,
         email,
         mobile,
         metadata,
     } = currentUser;
 
     const user_labels = metadata ? Object.entries(metadata).map(([key, value]) => ({ key, value })) : [];
+
+    React.useEffect(() => {
+        if (visible) {
+            form.setFieldsValue({
+                user_labels: user_labels,
+            });
+        }
+    }, [id, visible]);
 
     const onSubmit: FormProps['onSubmit'] = async (e) => {
         console.log(e);
@@ -51,7 +58,6 @@ const UserEditor: React.FC<IUserEditorProps> = ({ visible, op, modify, closeDraw
             password: form.getFieldValue('password') as string || '',
             token_enable: form.getFieldValue('token_enable') as boolean,
             comment: form.getFieldValue('comment') as string,
-            source: form.getFieldValue('source') as string,
             email: form.getFieldValue('email') as string,
             mobile: form.getFieldValue('mobile') as string,
             metadata: labels.reduce((acc: { [key: string]: string }, label: { key: string, value: string }) => {
@@ -72,6 +78,7 @@ const UserEditor: React.FC<IUserEditorProps> = ({ visible, op, modify, closeDraw
         } else {
             openInfoNotification('请求成功', modify ? '修改用户信息成功' : '创建用户成功');
             closeDrawer();
+            refresh();
         }
     };
 
@@ -102,12 +109,6 @@ const UserEditor: React.FC<IUserEditorProps> = ({ visible, op, modify, closeDraw
                 </FormItem>
             )}
             <FormItem label={'备注'} name={'comment'} initialData={comment}
-                rules={[
-                    { max: 255, message: '长度不超过255个字符' }
-                ]}>
-                <Input />
-            </FormItem>
-            <FormItem label={'来源'} name={'source'} initialData={source}
                 rules={[
                     { max: 255, message: '长度不超过255个字符' }
                 ]}>
@@ -154,7 +155,14 @@ const UserEditor: React.FC<IUserEditorProps> = ({ visible, op, modify, closeDraw
 
     return (
         <div>
-            <Drawer size='large' header={op === 'view' ? '详细' : modify ? "编辑" : "创建"} footer={false} visible={visible} showOverlay={false} onClose={closeDrawer}>
+            <Drawer
+                size='large'
+                header={op === 'view' ? '详细' : modify ? "编辑" : "创建"}
+                footer={false}
+                visible={visible}
+                showOverlay={false}
+                onClose={closeDrawer}
+            >
                 {userForm}
             </Drawer>
         </div>
