@@ -32,7 +32,6 @@ const GroupEditor: React.FC<IGroupEditorProps> = ({ visible, op, modify, closeDr
         token_enable,
         comment,
         metadata,
-        relation,
     } = currentUserGroup;
 
     const [searchState, setSearchState] = React.useState<{
@@ -43,22 +42,9 @@ const GroupEditor: React.FC<IGroupEditorProps> = ({ visible, op, modify, closeDr
         userLoading: false,
     });
 
-    const group_labels = metadata ? Object.entries(metadata).map(([key, value]) => ({ key, value })) : [];
-
     React.useEffect(() => {
         if (visible) {
-
-            const userlist = relation.users ? relation.users.map((user) => ({ value: user.id, label: user.name || '' })) : []
-
-            form.setFieldsValue({
-                users: userlist,
-                user_groups: group_labels,
-            });
-
-            // 只有在编辑时才需要获取角色详情
-            if (op === 'edit' && id) {
-                fetchUserGroupDetail();
-            }
+            fetchUserGroupDetail();
             fetchUserData();
         }
     }, [id, visible]);
@@ -74,9 +60,14 @@ const GroupEditor: React.FC<IGroupEditorProps> = ({ visible, op, modify, closeDr
                 return;
             }
             const users = response.userGroup.relation.users ? response.userGroup.relation.users.map((user) => user.id) : []
+            const group_labels = response.userGroup.metadata ? Object.entries(metadata).map(([key, value]) => ({ key, value })) : [];
 
             form.setFieldsValue({
+                name: response.userGroup.name,
+                comment: response.userGroup.comment,
+                token_enable: response.userGroup.token_enable,
                 users: users,
+                group_labels: group_labels,
             })
         } catch (error: Error | any) {
             setSearchState(s => ({ ...s, fetchError: true, isLoading: false }));
@@ -109,7 +100,7 @@ const GroupEditor: React.FC<IGroupEditorProps> = ({ visible, op, modify, closeDr
             return;
         }
 
-        const users = form.getFieldValue('users') as { value: string, label: string }[]
+        const inusers = form.getFieldValue('users') as string[]
         const labels = form.getFieldValue('group_labels') as { key: string, value: string }[]
 
         const newData = {
@@ -123,9 +114,11 @@ const GroupEditor: React.FC<IGroupEditorProps> = ({ visible, op, modify, closeDr
             }, {}),
             relation: {
                 group_id: id,
-                users: users.map((user) => ({
-                    id: user.value,
-                })),
+                users: inusers.map((v) => {
+                    return {
+                        id: v,
+                    }
+                }),
             },
         }
 

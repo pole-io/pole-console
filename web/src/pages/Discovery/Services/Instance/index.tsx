@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Popup, Table, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData, Tag, Breadcrumb, Link, Loading } from 'tdesign-react';
+import { Popup, Table, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData, Tag, Breadcrumb, Link, Loading, Popconfirm } from 'tdesign-react';
 import { DeleteIcon, EditIcon, RefreshIcon } from 'tdesign-icons-react';
 import { useNavigate, BrowserRouterProps } from 'react-router-dom';
 
@@ -20,7 +20,7 @@ interface IInstanceListProps {
 
 const ServerError = () => <ErrorPage code={500} />;
 
-const columns = (handleEditInstance: (view: boolean, row: TableRowData) => void): PrimaryTableProps['columns'] => [
+const columns = (handleEditInstance: (row: TableRowData, op: 'edit' | 'delete' | 'view') => void): PrimaryTableProps['columns'] => [
     {
         colKey: 'id',
         title: 'ID',
@@ -31,7 +31,7 @@ const columns = (handleEditInstance: (view: boolean, row: TableRowData) => void)
         colKey: 'host',
         title: '主机',
         cell: ({ row }) => (
-            <Link theme='primary' onClick={() => handleEditInstance(true, row)}>
+            <Link theme='primary' onClick={() => handleEditInstance(row, 'view')}>
                 <Text>{row.host}</Text>
             </Link>
         ),
@@ -97,14 +97,25 @@ const columns = (handleEditInstance: (view: boolean, row: TableRowData) => void)
                             shape="square"
                             variant="text"
                             disabled={row.editable === false}
-                            onClick={() => handleEditInstance(false, row)}>
+                            onClick={() => handleEditInstance(row, 'edit')}>
                             <EditIcon />
                         </Button>
                     </Tooltip>
                     <Tooltip content={row.deleteable === false ? '无权限操作' : '删除'}>
-                        <Button shape="square" variant="text" disabled={row.deleteable === false}>
-                            <DeleteIcon />
-                        </Button>
+                        <Popconfirm
+                            content="确认删除吗"
+                            destroyOnClose
+                            placement="top"
+                            showArrow
+                            theme="default"
+                            onConfirm={() => {
+                                handleEditInstance(row, 'delete');
+                            }}
+                        >
+                            <Button shape="square" variant="text" disabled={row.deleteable === false}>
+                                <DeleteIcon />
+                            </Button>
+                        </Popconfirm>
                     </Tooltip>
                 </Space>
             )
@@ -135,7 +146,7 @@ export default React.memo((props: IInstanceListProps & BrowserRouterProps) => {
     const [editState, setEditState] = useState<{
         selectedRow?: TableRowData;
         visible: boolean;
-        mode: 'create' | 'edit' | 'view';
+        mode: 'create' | 'edit' | 'view' | 'delete';
     }>({ selectedRow: undefined, visible: false, mode: 'create' });
 
     // 模拟远程请求
@@ -165,7 +176,7 @@ export default React.memo((props: IInstanceListProps & BrowserRouterProps) => {
     }
 
     // 编辑、新建事件
-    const handleEditInstance = (view: boolean, row: TableRowData) => {
+    const handleEditInstance = (row: TableRowData, op: 'edit' | 'delete' | 'view') => {
         dispatch(editorInstance({
             id: row.id,
             host: row.host,
@@ -184,7 +195,7 @@ export default React.memo((props: IInstanceListProps & BrowserRouterProps) => {
         }))
         setEditState({
             visible: true,
-            mode: view ? 'view' : 'edit',
+            mode: op,
             selectedRow: { ...row },
         })
     }

@@ -1,5 +1,5 @@
 import { lazy } from 'react';
-import { DashboardIcon } from 'tdesign-icons-react';
+import { ComponentSpaceIcon } from 'tdesign-icons-react';
 import { IRouter } from '../index';
 
 const namespace: IRouter[] = [
@@ -7,7 +7,7 @@ const namespace: IRouter[] = [
     path: '/namespace',
     meta: {
       title: '命名空间',
-      Icon: DashboardIcon,
+      Icon: ComponentSpaceIcon,
     },
     Component: lazy(() => import('pages/Namespace'))
   },

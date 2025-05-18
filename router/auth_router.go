@@ -47,7 +47,7 @@ func AuthRouter(webSvr *gin.Engine, config *bootstrap.Config) {
 	v1.PUT("/user/token/refresh", handlers.ReverseProxyForServer(&config.PoleServer, config))
 
 	// 创建用户组
-	v1.POST("/usergroup", handlers.ReverseProxyForServer(&config.PoleServer, config))
+	v1.POST("/usergroups", handlers.ReverseProxyForServer(&config.PoleServer, config))
 	// 批量更新用户组
 	v1.PUT("/usergroups", handlers.ReverseProxyForServer(&config.PoleServer, config))
 	// 获取用户组列表
@@ -66,7 +66,7 @@ func AuthRouter(webSvr *gin.Engine, config *bootstrap.Config) {
 	// 创建鉴权策略
 	v1.POST("/policies", handlers.ReverseProxyForServer(&config.PoleServer, config))
 	// 查询鉴权策略详细
-	v1.GET("/policy/detail", handlers.ReverseProxyForServer(&config.PoleServer, config))
+	v1.GET("/policies/detail", handlers.ReverseProxyForServer(&config.PoleServer, config))
 	// 批量更新鉴权策略
 	v1.PUT("/policies", handlers.ReverseProxyForServer(&config.PoleServer, config))
 	// 批量删除鉴权策略

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, Table, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData, Tabs, Tag, Dialog, Input } from 'tdesign-react';
+import { Link, Table, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData, Tabs, Tag, Dialog, Input, Popconfirm } from 'tdesign-react';
 import { DeleteIcon, EditIcon, RefreshIcon, System2Icon, User1Icon, UsergroupIcon, UserVisibleIcon } from 'tdesign-icons-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -69,11 +69,6 @@ const defaultColumns = (handleEditPolicy: (row: TableRowData, op: 'view' | 'crea
         cell: ({ row: { action } }: TableRowData) => (<Text>{action || '-'}</Text>),
     },
     {
-        colKey: 'policy_type',
-        title: '策略',
-        cell: ({ row: { user_type } }: TableRowData) => (<Text>{user_type}</Text>),
-    },
-    {
         colKey: 'source',
         title: '来源',
         cell: ({ row: { source } }: TableRowData) => (<Text>{source}</Text>),
@@ -94,7 +89,7 @@ const defaultColumns = (handleEditPolicy: (row: TableRowData, op: 'view' | 'crea
         cell: ({ row: { ctime, mtime } }: TableRowData) => <Text>修改: {mtime}<br />创建: {ctime}</Text>,
     },
     {
-        colKey: 'action',
+        colKey: 'operation',
         title: '操作',
         cell: ({ row }) => {
             return (
@@ -169,7 +164,7 @@ const customColumns = (handleEditPolicy: (row: TableRowData, op: 'view' | 'creat
         cell: ({ row: { ctime, mtime } }: TableRowData) => <Text>修改: {mtime}<br />创建: {ctime}</Text>,
     },
     {
-        colKey: 'action',
+        colKey: 'operation',
         title: '操作',
         cell: ({ row }) => {
             return (
@@ -185,16 +180,24 @@ const customColumns = (handleEditPolicy: (row: TableRowData, op: 'view' | 'creat
                     </Tooltip>
                     {!row.default_strategy && (
                         <Tooltip content={row.deleteable === false ? '无权限操作' : '删除'}>
-                            <Button
-                                shape="square"
-                                variant="text"
-                                disabled={row.deleteable === false}
-                                onClick={() => {
+                            <Popconfirm
+                                content="确认删除吗"
+                                destroyOnClose
+                                placement="top"
+                                showArrow
+                                theme="default"
+                                onConfirm={() => {
                                     handleEditPolicy(row, 'delete', 'user');
                                 }}
                             >
-                                <DeleteIcon />
-                            </Button>
+                                <Button
+                                    shape="square"
+                                    variant="text"
+                                    disabled={row.deleteable === false}
+                                >
+                                    <DeleteIcon />
+                                </Button>
+                            </Popconfirm>
                         </Tooltip>
                     )}
                 </Space>
@@ -327,7 +330,6 @@ const PolicyTable: React.FC<IPolicyTableProps> = (props) => {
             </Row>
             <PolicyEditor
                 key={editorState.mode + (editorState.data?.name || 'new') + (editorState.visible ? '1' : '0')}
-                modify={editorState.mode === 'edit'}
                 visible={editorState.visible && editorState.resource === 'user'}
                 closeDrawer={() => {
                     // 关闭后重置编辑器状态

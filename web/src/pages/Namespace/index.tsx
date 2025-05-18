@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { describeComplicatedNamespaces } from 'services/namespace';
-import { Table, Popup, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData, Loading } from 'tdesign-react';
+import { Table, Popup, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData, Loading, Popconfirm } from 'tdesign-react';
 import { DeleteIcon, EditIcon, RefreshIcon, ChevronRightCircleIcon, CreditcardIcon } from 'tdesign-icons-react';
 
 import { useAppDispatch, useAppSelector } from 'modules/store';
@@ -15,7 +15,7 @@ import { editorNamespace } from 'modules/namespace';
 
 const ServerError = () => <ErrorPage code={500} />;
 
-const columns = (handleEditNamespace: (row: TableRowData) => void): PrimaryTableProps['columns'] => [
+const columns = (handleEditNamespace: (row: TableRowData, op: 'edit' | 'delete') => void): PrimaryTableProps['columns'] => [
     {
         colKey: 'index',
         title: 'id',
@@ -93,7 +93,7 @@ const columns = (handleEditNamespace: (row: TableRowData) => void): PrimaryTable
                             shape="square"
                             variant="text"
                             disabled={row.editable === false}
-                            onClick={() => handleEditNamespace(row)}>
+                            onClick={() => handleEditNamespace(row, 'edit')}>
                             <EditIcon />
                         </Button>
                     </Tooltip>
@@ -103,9 +103,20 @@ const columns = (handleEditNamespace: (row: TableRowData) => void): PrimaryTable
                         </Button>
                     </Tooltip>
                     <Tooltip content={row.deleteable === false ? '无权限操作' : '删除'}>
-                        <Button shape="square" variant="text" disabled={row.deleteable === false}>
-                            <DeleteIcon />
-                        </Button>
+                        <Popconfirm
+                            content="确认删除吗"
+                            destroyOnClose
+                            placement="top"
+                            showArrow
+                            theme="default"
+                            onConfirm={() => {
+                                handleEditNamespace(row, 'delete');
+                            }}
+                        >
+                            <Button shape="square" variant="text" disabled={row.deleteable === false}>
+                                <DeleteIcon />
+                            </Button>
+                        </Popconfirm>
                     </Tooltip>
                 </Space>
             )
@@ -138,7 +149,11 @@ export default React.memo(() => {
     }>({ visible: false, mode: 'create', data: undefined });
 
     // 编辑、新建事件
-    const handleEditNamespace = (row: TableRowData) => {
+    const handleEditNamespace = (row: TableRowData, op: 'edit' | 'delete') => {
+        if (op === 'delete') {
+            return;
+        }
+
         dispatch(editorNamespace({
             name: row.name,
             comment: row.comment,

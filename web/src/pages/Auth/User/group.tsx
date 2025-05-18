@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { Link, Popup, Table, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData, Tabs, Tag, Loading } from 'tdesign-react';
-import { DeleteIcon, EditIcon, RefreshIcon, CreditcardIcon } from 'tdesign-icons-react';
+import { Link, Popup, Table, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData, Tabs, Tag, Loading, Popconfirm } from 'tdesign-react';
+import { DeleteIcon, EditIcon, RefreshIcon, CreditcardIcon, UserVisibleIcon } from 'tdesign-icons-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import Search from 'components/Search';
 import ErrorPage from 'components/ErrorPage';
 import Text from 'components/Text';
 import { useAppDispatch, useAppSelector } from 'modules/store';
-import { openErrNotification } from 'utils/notifition';
+import { openErrNotification, openInfoNotification } from 'utils/notifition';
 import style from './index.module.less';
 import { describeUsers } from 'services/users';
 import { describeUserGroups } from 'services/user_group';
 import ShowToken from './ShowToken';
 import GroupEditor from './GroupEditor';
+import { editorUserGroup, removeUserGroups } from 'modules/user/groups';
 
 interface IUsersProps {
 
@@ -20,7 +21,7 @@ interface IUsersProps {
 
 const ServerError = () => <ErrorPage code={500} />;
 
-const columns = (handleEditUser: (row: TableRowData) => void, redirect: (id: string, name: string) => void): PrimaryTableProps['columns'] => [
+const columns = (handleEditGroup: (row: TableRowData, op: 'view' | 'create' | 'edit' | 'delete', res: string) => void, redirect: (id: string, name: string) => void): PrimaryTableProps['columns'] => [
     {
         colKey: 'id',
         title: 'ID',
@@ -64,7 +65,7 @@ const columns = (handleEditUser: (row: TableRowData) => void, redirect: (id: str
                             onClick={() => {
 
                             }}>
-                            <EditIcon />
+                            <UserVisibleIcon />
                         </Button>
                     </Tooltip>
                     <Tooltip content={row.editable === false ? '无权限操作' : '编辑'}>
@@ -72,14 +73,25 @@ const columns = (handleEditUser: (row: TableRowData) => void, redirect: (id: str
                             shape="square"
                             variant="text"
                             disabled={row.editable === false}
-                            onClick={() => handleEditUser(row)}>
+                            onClick={() => handleEditGroup(row, 'edit', 'group')}>
                             <EditIcon />
                         </Button>
                     </Tooltip>
                     <Tooltip content={row.deleteable === false ? '无权限操作' : '删除'}>
-                        <Button shape="square" variant="text" disabled={row.deleteable === false}>
-                            <DeleteIcon />
-                        </Button>
+                        <Popconfirm
+                            content="确认删除吗"
+                            destroyOnClose
+                            placement="top"
+                            showArrow
+                            theme="default"
+                            onConfirm={() => {
+                                handleEditGroup(row, 'delete', 'group');
+                            }}
+                        >
+                            <Button shape="square" variant="text" disabled={row.deleteable === false}>
+                                <DeleteIcon />
+                            </Button>
+                        </Popconfirm>
                     </Tooltip>
                 </Space>
             )
@@ -114,13 +126,35 @@ const GroupsTable: React.FC<IUsersProps> = ({ }) => {
     }>({ visible: false, mode: 'create', data: undefined, resource: 'group' });
 
     // 编辑、新建事件
-    const handleEditUserGroup = (row: TableRowData) => {
+    const handleEditUserGroup = (row: TableRowData, mode: 'view' | 'create' | 'edit' | 'delete', res: string) => {
+        if (mode === 'delete') {
+            setSearchState(s => ({ ...s, isLoading: true }));
+            dispatch(removeUserGroups({ ids: [row.id as string] }))
+                .then((res) => {
+                    openInfoNotification("请求成功", "删除用户组成功");
+                })
+                .catch((err) => {
+                    openErrNotification("删除用户组失败", err);
+                })
+                .finally(() => {
+                    setSearchState(s => ({ ...s, isLoading: false }));
+                });
+            return;
+        }
         setEditorState({
             visible: true,
             mode: 'edit',
             data: { ...row },
             resource: 'group',
         })
+        dispatch(editorUserGroup({
+            id: row.id,
+            name: row.name,
+            comment: row.comment,
+            token_enable: row.token_enable,
+            relation: row.relation,
+            metadata: row.metadata,
+        }))
     }
 
     const handleCreateUserGroup = () => {
@@ -211,7 +245,7 @@ const GroupsTable: React.FC<IUsersProps> = ({ }) => {
             <Table
                 data={searchState.groups}
                 columns={columns(handleEditUserGroup, (id: string, name: string) => {
-                    navigate(`detail?id=${id}&name=${name}`);
+                    navigate(`groupdetail?id=${id}&name=${name}`);
                 })}
                 loading={searchState.isLoading}
                 rowKey="id"

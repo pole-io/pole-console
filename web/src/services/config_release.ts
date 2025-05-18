@@ -205,3 +205,49 @@ export async function deleteFileReleases(params: DeleteFileReleaseRequest[]) {
     return res
 }
 
+// DescribeFileSubscribersRequest 查询文件订阅者
+export interface DescribeFileSubscribersRequest {
+    // 命名空间
+    namespace: string
+    // 配置分组
+    group: string
+    // 文件名称
+    file_name: string
+}
+
+export interface VersionClient {
+    version: number;
+    subscribers: FileSubscriber[];
+}
+
+export interface FileSubscriber {
+    id: string;
+    host: string;
+    release_name: string;
+    version: string;
+    client_type: string;
+}
+
+export interface FileSubscriptionInfo {
+    name: string;
+    namespace: string;
+    group: string;
+    file_name: string;
+    release_type: string;
+    version: number;
+    release_name: string;
+}
+
+export interface DescribeFileSubscribersResponse {
+    // 订阅者信息
+    clients?: VersionClient[]
+}
+
+export async function describeFileSubscribers(params: DescribeFileSubscribersRequest) {
+    const res = await getApiRequest<DescribeFileSubscribersResponse>({
+        action: '/config/v1/files/subscribers',
+        data: params,
+    })
+    return res
+}
+

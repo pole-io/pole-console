@@ -63,7 +63,17 @@ export async function describeRoles(params: DescribeRolesRequest) {
     }
 }
 
-// 修改用户信息
+
+export async function describeAllRoles() {
+    const { list: userGroups } = await getAllList(describeRoles, {
+        listKey: 'content',
+        totalKey: 'totalCount',
+    })({})
+    return userGroups
+}
+
+
+// 修改角色信息
 export interface CreateRoleRequest {
     // 用户
     id: string

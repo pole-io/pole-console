@@ -1,15 +1,14 @@
 import { createSlice, createAsyncThunk, current } from '@reduxjs/toolkit';
 import { doLogin } from '../../services/login'
+import { LoginUserIdKey, PoleTokenKey } from 'utils/request';
 
 const namespace = 'user';
-export const PolarisTokenKey = 'polaris_token'
 export const LoginRoleKey = 'login-role'
-export const LoginUserIdKey = 'login-user-id'
 export const LoginUserOwnerIdKey = 'login-owner-id'
 export const LoginUserNameKey = 'login-name'
 
 const initialState = {
-  isLogin: !!sessionStorage.getItem(PolarisTokenKey), // 是否登录
+  isLogin: !!sessionStorage.getItem(PoleTokenKey), // 是否登录
   currentUser: {
     name: sessionStorage.getItem(LoginUserNameKey) || '', // 用户名
     role: sessionStorage.getItem(LoginRoleKey) || '', // 角色
@@ -22,7 +21,7 @@ const initialState = {
 export const login = createAsyncThunk(`${namespace}/login`, async ({ username, password }: { username: string; password: string }, { fulfillWithValue, rejectWithValue }) => {
   try {
     const res = await doLogin({ name: username, password: password });
-    sessionStorage.setItem(PolarisTokenKey, res.token);
+    sessionStorage.setItem(PoleTokenKey, res.token);
     sessionStorage.setItem(LoginUserNameKey, res.name);
     sessionStorage.setItem(LoginRoleKey, res.role);
     sessionStorage.setItem(LoginUserIdKey, res.user_id);
@@ -38,7 +37,7 @@ const loginReducer = createSlice({
   initialState,
   reducers: {
     logout: (state) => {
-      sessionStorage.removeItem(PolarisTokenKey);
+      sessionStorage.removeItem(PoleTokenKey);
       sessionStorage.removeItem(LoginUserNameKey);
       sessionStorage.removeItem(LoginRoleKey);
       sessionStorage.removeItem(LoginUserIdKey);

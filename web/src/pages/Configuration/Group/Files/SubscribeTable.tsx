@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { Drawer, Form, Input, Space, Button, Select, Table, Tooltip, Descriptions } from "tdesign-react";
+import { Drawer, Form, Input, Space, Button, Select, Table, Tooltip, Descriptions, Tree } from "tdesign-react";
 import type { FormProps, PrimaryTableProps, TableProps, TableRowData } from 'tdesign-react';
 import { Delete1Icon, Edit1Icon, RollbackIcon } from 'tdesign-icons-react';
 
 import ErrorPage from 'components/ErrorPage';
 import { useAppDispatch, useAppSelector } from 'modules/store';
 import Text from 'components/Text';
-import { describeFileReleaseVersions } from 'services/config_release';
+import { describeFileReleaseVersions, describeFileSubscribers } from 'services/config_release';
 import { openErrNotification } from 'utils/notifition';
+
+import style from './index.module.less';
+import { set } from 'lodash';
 
 interface ISubscribeTableProps {
     namespace: string;
@@ -21,24 +24,19 @@ const ServerError = () => <ErrorPage code={500} />;
 
 const columns = (props: ISubscribeTableProps, handleViewRelease: (view: boolean, row: TableRowData) => void): PrimaryTableProps['columns'] => [
     {
-        colKey: 'name',
-        title: '名称',
-        cell: ({ row: { name } }) => <Text>{name}</Text>,
+        colKey: 'id',
+        title: '客户端ID',
+        cell: ({ row: { id } }) => <Text>{id}</Text>,
     },
     {
-        colKey: 'operation',
-        title: '类型',
-        cell: ({ row: { op } }) => <Text>{op}</Text>,
+        colKey: 'host',
+        title: '客户端IP',
+        cell: ({ row: { host } }) => <Text>{host}</Text>,
     },
     {
-        colKey: 'ctime',
-        title: '操作时间',
-        cell: ({ row: { modifyTime } }) => <Text>{modifyTime}</Text>,
-    },
-    {
-        colKey: 'modifyBy',
-        title: '操作人',
-        cell: ({ row: { modifyBy } }) => <Text>{modifyBy}</Text>,
+        colKey: 'client_type',
+        title: '客户端类型',
+        cell: ({ row: { client_type } }) => <Text>{client_type}</Text>,
     },
     {
         colKey: 'action',
@@ -71,31 +69,49 @@ const SubscribeTable: React.FC<ISubscribeTableProps> = (props) => {
     const dispatch = useAppDispatch();
 
     const [searchState, setSearchState] = useState<{
-        releases: TableProps['data'];
+        versionTree: any[]
+        subscribers: TableProps['data'];
         total: number;
         query: string;
         fetchError: boolean;
         isLoading: boolean;
-    }>({ releases: [], total: 0, query: '', fetchError: false, isLoading: false });
+    }>({ versionTree: [], subscribers: [], total: 0, query: '', fetchError: false, isLoading: false });
 
     React.useEffect(() => {
-        fetchReleaseVersions();
+        fetchFileSubscribers();
     }, [props.namespace, props.group, props.filename]);
 
-    const fetchReleaseVersions = async () => {
+    const fetchFileSubscribers = async () => {
         setSearchState((prev) => ({ ...prev, isLoading: true }));
         try {
-            const releases = await describeFileReleaseVersions({
+            const subscribers = await describeFileSubscribers({
                 namespace: props.namespace,
                 group: props.group,
                 file_name: props.filename,
             });
-            setSearchState((prev) => ({
-                ...prev,
-                releases: releases.configFileReleases || [],
-                total: releases.configFileReleases?.length || 0,
-                isLoading: false,
-            }));
+
+            if (subscribers?.clients) {
+                const versions: Record<string, boolean> = {}
+                subscribers.clients.forEach((client) => {
+                    versions[client.version.toString()] = true;
+                })
+                const versionTree = Object.keys(versions).map((version) => ({
+                    label: version,
+                    value: version,
+                    children: false,
+                }));
+                setSearchState((prev) => ({
+                    ...prev,
+                    versionTree,
+                    subscribers: subscribers.clients,
+                    isLoading: false,
+                }));
+            } else {
+                setSearchState((prev) => ({
+                    ...prev,
+                    isLoading: false,
+                }));
+            }
         } catch (err) {
             setSearchState((prev) => ({
                 ...prev,
@@ -118,22 +134,27 @@ const SubscribeTable: React.FC<ISubscribeTableProps> = (props) => {
                 size="small"
                 title={`${props.filename}`}
             ></Descriptions>
-            <Table
-                data={searchState.releases}
-                columns={columns(props, handleViewRelease)}
-                loading={searchState.isLoading}
-                rowKey="id"
-                size={"large"}
-                tableLayout={'auto'}
-                cellEmptyContent={'-'}
-                pagination={{
-                    defaultCurrent: 1,
-                    defaultPageSize: 10,
-                    total: searchState.total,
-                    showJumper: true,
-                }}
-                selectOnRowClick={false}
-            />
+            <Space>
+                <div className={style.treeContent}>
+                    <Tree data={searchState.versionTree} activable hover transition />
+                </div>
+                <Table
+                    data={searchState.subscribers}
+                    columns={columns(props, handleViewRelease)}
+                    loading={searchState.isLoading}
+                    rowKey="id"
+                    size={"large"}
+                    tableLayout={'fixed'}
+                    cellEmptyContent={'-'}
+                    pagination={{
+                        defaultCurrent: 1,
+                        defaultPageSize: 10,
+                        total: searchState.total,
+                        showJumper: true,
+                    }}
+                    selectOnRowClick={false}
+                />
+            </Space>
         </>
     )
 

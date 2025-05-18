@@ -1,6 +1,6 @@
 import LabelInput from "components/LabelInput";
 import React from "react";
-import { Card, Form, Input, Link, Loading, Popup, Space, Table, Tag, TableProps, Collapse, Row, Col, Breadcrumb } from "tdesign-react";
+import { Card, Form, Input, Link, Loading, Popup, Space, Table, Tag, TableProps, Collapse, Row, Col, Breadcrumb, Descriptions, Avatar, Tabs } from "tdesign-react";
 import type { FormProps } from 'tdesign-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -8,11 +8,12 @@ import { useAppDispatch, useAppSelector } from 'modules/store';
 import { enableUserToken, resetUserToken } from "modules/user/users";
 import { describeUsers, describeUserToken, User } from "services/users";
 import { openErrNotification, openInfoNotification } from "utils/notifition";
-import namespace from "modules/namespace";
-import { redirect } from "react-router-dom";
+import { describeUserGroupDetail, describeUserGroupToken, UserGroup } from "services/user_group";
 
 const { FormItem } = Form;
 const { BreadcrumbItem } = Breadcrumb;
+const { DescriptionsItem } = Descriptions;
+const { TabPanel } = Tabs;
 
 interface IGroupDetailProps {
 
@@ -28,32 +29,30 @@ const GroupDetailTable: React.FC<IGroupDetailProps> = ({ }) => {
 
     const [viewState, setViewState] = React.useState<{
         loading: boolean;
-        user: User;
+        group: UserGroup;
         data: TableProps['data'];
         fetchError: boolean;
-    }>({ loading: false, user: {} as User, data: [], fetchError: false });
+    }>({ loading: false, group: {} as UserGroup, data: [], fetchError: false });
 
     async function fetchData() {
-        setViewState({ ...viewState, loading: true, user: {} as User, fetchError: false });
-        const tokenRet = await describeUserToken({ id: userId as string })
-        if (tokenRet?.user) {
-            const ret = await describeUsers({ id: userId as string })
-            if (ret?.content.length > 0) {
-                const expectUser = ret.content[0];
-                expectUser.auth_token = tokenRet.user.auth_token;
+        setViewState({ ...viewState, loading: true, group: {} as UserGroup, fetchError: false });
+        const tokenRet = await describeUserGroupToken({ id: userId as string })
+        if (tokenRet?.userGroup) {
+            const ret = await describeUserGroupDetail({ id: userId as string })
+            if (ret?.userGroup) {
+                const expectGroup = ret.userGroup;
+                expectGroup.auth_token = tokenRet.userGroup.auth_token;
                 setViewState({
-                    loading: false, user: expectUser, data: [
-                        { token: expectUser.auth_token, status: expectUser.token_enable }
+                    loading: false, group: expectGroup, data: [
+                        { token: expectGroup.auth_token, status: expectGroup.token_enable }
                     ], fetchError: false
                 });
                 form.setFieldsValue({
-                    id: expectUser.id,
-                    name: expectUser.name,
-                    comment: expectUser.comment,
-                    source: expectUser.source,
-                    email: expectUser.email,
-                    mobile: expectUser.mobile,
-                    user_labels: expectUser.metadata ? Object.entries(expectUser.metadata).map(([key, value]) => ({ key, value })) : [],
+                    id: expectGroup.id,
+                    name: expectGroup.name,
+                    comment: expectGroup.comment,
+                    source: expectGroup.source,
+                    user_labels: expectGroup.metadata ? Object.entries(expectGroup.metadata).map(([key, value]) => ({ key, value })) : [],
                 });
             } else {
                 setViewState({ ...viewState, loading: false, fetchError: true });
@@ -82,42 +81,20 @@ const GroupDetailTable: React.FC<IGroupDetailProps> = ({ }) => {
             onSubmit={onSubmit}
         >
             <Space direction="vertical" style={{ width: '100%' }}>
-                <Row>
-                    <Col span={6}>
-                        <FormItem label={'ID'} name={'id'} shouldUpdate={true}>
-                            <Input borderless={true} readonly defaultValue={viewState.user?.id} placeholder="" />
-                        </FormItem>
-                    </Col>
-                    <Col span={6}>
-                        <FormItem label={'用户名'} name={'name'} shouldUpdate={true}>
-                            <Input borderless={true} readonly defaultValue={viewState.user?.name} placeholder="" />
-                        </FormItem>
-                    </Col>
-                </Row>
-                <Row>
-                    <Col span={6}>
-                        <FormItem label={'备注'} name={'comment'} shouldUpdate={true}>
-                            <Input borderless={true} readonly defaultValue={viewState.user?.comment} placeholder="" />
-                        </FormItem>
-                    </Col>
-                    <Col span={6}>
-                        <FormItem label={'来源'} name={'source'} shouldUpdate={true}>
-                            <Input borderless={true} readonly defaultValue={viewState.user?.source} placeholder="" />
-                        </FormItem>
-                    </Col>
-                </Row>
-                <Row>
-                    <Col span={6}>
-                        <FormItem label={'邮箱'} name={'email'} shouldUpdate={true}>
-                            <Input borderless={true} readonly defaultValue={viewState.user?.email} placeholder="" />
-                        </FormItem>
-                    </Col>
-                    <Col span={6}>
-                        <FormItem label={'手机号'} name={'mobile'} shouldUpdate={true}>
-                            <Input borderless={true} readonly defaultValue={viewState.user?.mobile} placeholder="" />
-                        </FormItem>
-                    </Col>
-                </Row>
+                <Descriptions>
+                    <DescriptionsItem label={'ID'}>
+                        {viewState.group?.id}
+                    </DescriptionsItem>
+                    <DescriptionsItem label={'备注'}>
+                        {viewState.group?.comment}
+                    </DescriptionsItem>
+                    <DescriptionsItem label={'组名'}>
+                        {viewState.group?.name}
+                    </DescriptionsItem>
+                    <DescriptionsItem label={'来源'}>
+                        {viewState.group?.source}
+                    </DescriptionsItem>
+                </Descriptions>
                 <FormItem label="资源访问凭据" name="token_enable" shouldUpdate={true}>
                     <Table
                         rowKey="id"
@@ -151,7 +128,7 @@ const GroupDetailTable: React.FC<IGroupDetailProps> = ({ }) => {
                                 colKey: 'op',
                                 title: '操作',
                                 cell: () => {
-                                    const enabled = viewState.user.token_enable
+                                    const enabled = viewState.group.token_enable
                                     return (
                                         <Space>
                                             <Link theme="primary" onClick={() => {
@@ -198,16 +175,11 @@ const GroupDetailTable: React.FC<IGroupDetailProps> = ({ }) => {
                 <Breadcrumb maxItemWidth="200px">
                     <BreadcrumbItem onClick={() => {
                         navigate(-1);
-                    }}>用户</BreadcrumbItem>
+                    }}>用户组</BreadcrumbItem>
                     <BreadcrumbItem>{username}</BreadcrumbItem>
                 </Breadcrumb>
                 <Card
-                    title={`用户 ${username} 详情`}
-                    actions={
-                        <Link theme="primary" onClick={handleChangePassword} style={{ cursor: 'pointer' }}>
-                            修改密码
-                        </Link>
-                    }
+                    title={`用户组 ${username} 详情`}
                     hoverShadow
                 >
                     <Loading
@@ -218,6 +190,22 @@ const GroupDetailTable: React.FC<IGroupDetailProps> = ({ }) => {
                     >
                         {userForm}
                     </Loading>
+                </Card>
+                <Card>
+                    <Tabs>
+                        <TabPanel value="user" label="用户信息">
+                            {viewState.group?.relation?.users?.map((item, index) => {
+                                return (
+                                    <Avatar shape="round" style={{ margin: 10 }} size="60px">{item.name}</Avatar>
+                                )
+                            })
+                            }
+                        </TabPanel>
+                        <TabPanel value="role" label="角色信息">
+                        </TabPanel>
+                        <TabPanel value="permission" label="权限信息">
+                        </TabPanel>
+                    </Tabs>
                 </Card>
             </Space>
         </>

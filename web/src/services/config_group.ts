@@ -44,6 +44,17 @@ export async function describeConfigFileGroups(params: DescribeConfigFileGroupRe
     }
 }
 
+export async function describeAllConfigGroups() {
+    const res = await getAllList(describeConfigFileGroups, {
+        listKey: 'list',
+        totalKey: 'totalCount',
+    })({})
+    return {
+        list: res.list ? res.list : [],
+        totalCount: res.totalCount
+    }
+}
+
 // 创建配置分组
 export interface CreateConfigFileGroupRequest {
     name: string

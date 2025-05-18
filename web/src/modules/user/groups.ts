@@ -69,10 +69,10 @@ export const resetUserGroupToken = createAsyncThunk(`usergroup/token/refresh`, a
     }
 });
 
-export const removeUserGroups = createAsyncThunk(`usergroup/delete`, async ({ state }: { state: UserGroupState[] }, { fulfillWithValue, rejectWithValue }) => {
+export const removeUserGroups = createAsyncThunk(`usergroup/delete`, async ({ ids }: { ids: string[] }, { fulfillWithValue, rejectWithValue }) => {
     try {
-        const res = await deleteUserGroups(state.map((item) => ({ id: item.id as string })));
-        return fulfillWithValue(state); // 返回 token
+        const res = await deleteUserGroups(ids.map(id => ({ id })));
+        return fulfillWithValue(res); // 返回 token
     } catch (error) {
         return rejectWithValue((error as Error).message); // 捕获错误并返回
     }

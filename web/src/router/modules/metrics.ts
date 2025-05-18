@@ -1,5 +1,5 @@
 import { lazy } from 'react';
-import { CheckCircleIcon } from 'tdesign-icons-react';
+import { CheckCircleIcon, IndicatorIcon } from 'tdesign-icons-react';
 import { IRouter } from '../index';
 
 const metrics: IRouter[] = [
@@ -7,7 +7,7 @@ const metrics: IRouter[] = [
     path: '/metrics',
     meta: {
       title: '平台观测',
-      Icon: CheckCircleIcon,
+      Icon: IndicatorIcon,
     },
     children: [
       {

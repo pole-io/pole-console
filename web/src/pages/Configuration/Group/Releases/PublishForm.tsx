@@ -7,8 +7,6 @@ import { useAppDispatch, useAppSelector } from 'modules/store';
 import { describeFileReleaseVersions, describeOneFileRelease } from 'services/config_release';
 import { describeOneConfigFile } from 'services/config_files';
 import { publishConfigFiles } from 'modules/configuration/release';
-import { release } from 'os';
-import MatchInput from 'components/MatchInput';
 import ClientLabelInput from 'components/ClientLabelInput';
 import { MatcheLabel } from 'services/types';
 
@@ -65,7 +63,7 @@ const PublishForm: React.FC<IPublishFormProps> = (props) => {
             fileName: props.filename,
             name: form.getFieldValue("name") as string,
             releaseDescription: form.getFieldValue("comment") as string,
-            releaseType: releaseType === 'normal' ? 'normal' as const : 'beta' as const,
+            releaseType: releaseType === 'normal' ? 'normal' as const : 'gray' as const,
             betaLabels: form.getFieldValue("betaLabels") as MatcheLabel[],
         }
 
@@ -208,7 +206,7 @@ const PublishForm: React.FC<IPublishFormProps> = (props) => {
                             <FormItem label='发布类型' name='releaseType' initialData={'normal'}>
                                 <RadioGroup>
                                     <Radio value="normal">全量发布</Radio>
-                                    <Radio value="beta">灰度发布</Radio>
+                                    <Radio value="gray">灰度发布</Radio>
                                 </RadioGroup>
                             </FormItem>
                             <FormItem shouldUpdate={(prev, next) => {
@@ -216,7 +214,7 @@ const PublishForm: React.FC<IPublishFormProps> = (props) => {
                                 return enableChange;
                             }}>
                                 {({ getFieldValue }) => {
-                                    if (getFieldValue('releaseType') === 'beta') {
+                                    if (getFieldValue('releaseType') === 'gray') {
                                         return (
                                             <ClientLabelInput form={form} label='客户端标签' name='betaLabels' disabled={false} />
                                         );

@@ -1,25 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Tooltip, Space, Row, Col, TableRowData, Breadcrumb, Tree, Card, Input, TreeInstanceFunctions, Tabs, StickyTool } from 'tdesign-react';
-import { AddIcon, ChatIcon, FileAddIcon, Icon, QrcodeIcon, RefreshIcon } from 'tdesign-icons-react';
+import { Button, Tooltip, Row, Col, Breadcrumb, Tree, Input, TreeInstanceFunctions, Tabs, Popconfirm } from 'tdesign-react';
+import { Delete1Icon, FileAddIcon, Icon, RefreshIcon } from 'tdesign-icons-react';
 import { useNavigate, BrowserRouterProps } from 'react-router-dom';
-import type { TreeProps, TreeNodeValue, TreeNodeModel } from 'tdesign-react';
+import type { TreeProps, TreeNodeModel } from 'tdesign-react';
 
 import ErrorPage from 'components/ErrorPage';
 import { useAppDispatch, useAppSelector } from 'modules/store';
 import { openErrNotification } from 'utils/notifition';
 import style from './index.module.less';
 import { ConfigFile, describeAllConfigFiles } from 'services/config_files';
-import FileEditor from './FileView';
 import { viewConfigFile } from 'modules/configuration/file';
-import TabPanel from 'tdesign-react/es/tabs/TabPanel';
 import FileCreator from './FileCreator';
-import StickyItem from 'tdesign-react/es/sticky-tool/StickyItem';
 import ReleaseTable from '../Releases/ReleaseTable';
 import { selectConfigGroup } from 'modules/configuration/group';
 import SubscribeTable from './SubscribeTable';
 import FileView from './FileView';
 
 const { BreadcrumbItem } = Breadcrumb;
+const { TabPanel } = Tabs;
 
 interface IFileListProps {
 }
@@ -90,7 +88,8 @@ export default React.memo((props: IFileListProps & BrowserRouterProps) => {
         mode: 'create' | 'edit' | 'view';
         editable?: boolean;
         deleteable?: boolean;
-    }>({ activeNode: undefined, visible: false, mode: 'view', editable: ownerGroup.editable, deleteable: ownerGroup.deleteable });
+        nodeFilter: string;
+    }>({ activeNode: undefined, visible: false, mode: 'view', editable: ownerGroup.editable, deleteable: ownerGroup.deleteable, nodeFilter: '' });
 
     // 模拟远程请求
     async function fetchData() {
@@ -105,34 +104,49 @@ export default React.memo((props: IFileListProps & BrowserRouterProps) => {
         }
     }
 
-    useEffect(() => {
+    React.useEffect(() => {
         fetchData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const refreshTable = () => {
-        setSearchState(s => ({ ...s, fetchError: false, isLoading: true }));
-        fetchData();
-    }
-
-    const [nodeFilter, setNodeFilter] = useState('');
-
     const treeSearch: TreeProps['filter'] = (node) => {
-        const rs = (node.data.label as string).indexOf(nodeFilter) >= 0;
+        const rs = (node.data.label as string).indexOf(editState.nodeFilter) >= 0;
         return rs;
     };
 
-    const handleCreateFile = () => {
+    const renderOperations = (node: TreeNodeModel) => (
+        <>
+            {/* 只有是激活状态的 node 才可以展示删除操作 */}
+            {editState.activeNode && editState.activeNode.data.value === node.value && (
+                <Tooltip content={editState.deleteable ? '删除' : '无权限操作'}>
+                    <Popconfirm
+                        content="确认删除吗"
+                        destroyOnClose
+                        placement="top"
+                        showArrow
+                        theme="default"
+                        onConfirm={() => {
+                            handleOperateFile(node, 'delete');
+                        }}
+                    >
+                        <Button style={{ marginLeft: '10px' }} disabled={!editState.deleteable} size="small" variant='text' icon={<Delete1Icon />} />
+                    </Popconfirm>
+                </Tooltip>
+
+            )}
+        </>
+    );
+
+    const handleOperateFile = (node: TreeNodeModel, op: 'create' | 'delete') => {
+        if (op === 'delete') {
+            return;
+        }
         dispatch(viewConfigFile({
             namespace: namespace ? namespace : '',
             group: group ? group : '',
             name: '',
         }));
-        setEditState({
-            visible: true,
-            mode: 'create',
-            activeNode: undefined,
-        })
+        setEditState(s => ({ ...s, visible: true, mode: 'create', activeNode: undefined }));
     }
 
     const mainView = (
@@ -149,7 +163,7 @@ export default React.memo((props: IFileListProps & BrowserRouterProps) => {
                 <Col span={3}>
                     <Row justify='space-between' className={style.toolBar}>
                         <Col span={9}>
-                            <Input value={nodeFilter} onChange={setNodeFilter} />
+                            <Input value={editState.nodeFilter} onChange={value => setEditState(s => ({ ...s, nodeFilter: value }))} />
                         </Col>
                         <Col>
                             <Tooltip content={ownerGroup.editable ? '新建配置文件' : '没有权限'}>
@@ -157,7 +171,7 @@ export default React.memo((props: IFileListProps & BrowserRouterProps) => {
                                     variant='text'
                                     size='small'
                                     icon={<FileAddIcon />}
-                                    onClick={() => handleCreateFile()}
+                                    onClick={() => handleOperateFile({} as TreeNodeModel, 'create')}
                                     disabled={!ownerGroup.editable}
                                 />
                             </Tooltip>
@@ -194,6 +208,7 @@ export default React.memo((props: IFileListProps & BrowserRouterProps) => {
                                 name: ctx.node.value as string,
                             }));
                         }}
+                        operations={renderOperations}
                     />
                 </Col>
                 <Col span={8} style={{ marginLeft: 30 }}>
@@ -204,7 +219,7 @@ export default React.memo((props: IFileListProps & BrowserRouterProps) => {
                                     <FileView editable={ownerGroup.editable} deleteable={ownerGroup.deleteable} key={editState.activeNode?.value} />
                                 </div>
                             </TabPanel>
-                            <TabPanel value={'file_release'} label="版本历史">
+                            <TabPanel value={'file_release'} label="发布记录">
                                 <div style={{ marginLeft: 20, marginTop: 20 }}>
                                     <ReleaseTable
                                         namespace={namespace ? namespace : ''}
@@ -236,7 +251,10 @@ export default React.memo((props: IFileListProps & BrowserRouterProps) => {
                     closeDrawer={() => {
                         setEditState(s => ({ ...s, visible: false, mode: 'view' }));
                     }}
-                    refresh={refreshTable}
+                    refresh={() => {
+                        setSearchState(s => ({ ...s, fetchError: false, isLoading: true }));
+                        fetchData();
+                    }}
                 />
             )}
 

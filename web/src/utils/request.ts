@@ -1,12 +1,15 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import proxy from '../configs/host';
 import { v4 as uuidv4 } from 'uuid';
+import { request } from 'http';
 
 const env = import.meta.env.MODE || 'development';
 const API_HOST = proxy[env].API;
 
 const TIMEOUT = 5000;
 
+export const PoleTokenKey = 'pole_token'
+export const LoginUserIdKey = 'login-user-id'
 
 export const instance = axios.create({
   baseURL: API_HOST,
@@ -33,10 +36,12 @@ export interface APIRequestOption {
   data?: any
   opts?: AxiosRequestConfig
 }
+
 export interface ApiResponse {
   code: number
   info: string
 }
+
 export const SuccessCode = 299999
 export const TokenNotExistCode = 407
 
@@ -45,14 +50,15 @@ const handleTokenNotExist = () => {
 
 export async function apiRequest<T>(options: APIRequestOption) {
   const { action, data = {}, opts } = options
+  const reqId = uuidv4()
   try {
     const res = (await instance
       .post<T & ApiResponse>(action, data, {
         ...opts,
         headers: {
-          'Authorization': window.localStorage.getItem('polaris_token'),
-          'X-Polaris-User': window.localStorage.getItem('login-user-id'),
-          'X-Request-Id': uuidv4(),
+          'Authorization': window.localStorage.getItem(PoleTokenKey),
+          'X-Polaris-User': window.localStorage.getItem(LoginUserIdKey),
+          'X-Request-Id': reqId,
           ...(opts?.headers ?? {}),
         },
       })
@@ -66,28 +72,29 @@ export async function apiRequest<T>(options: APIRequestOption) {
           }
         }
         if (error.response?.data) {
-          throw new Error(error.response?.data?.info)
+          throw new Error('请求失败, RequestId: ' + reqId, {cause: error.response?.data?.info})
         }
         throw error;
       })) as AxiosResponse<T & ApiResponse>
 
     return res.data
   } catch (e) {
-    throw e
+    throw new Error('请求失败, RequestId: ' + reqId, {cause: e})
   }
 }
 
 export async function getApiRequest<T>(options: APIRequestOption) {
   const { action, data = {}, opts } = options
+  const reqId = uuidv4()
   try {
     const res = (await axios
       .get<T & ApiResponse>(action, {
         params: data,
         ...opts,
         headers: {
-          'Authorization': window.localStorage.getItem('polaris_token'),
-          'X-Polaris-User': window.localStorage.getItem('login-user-id'),
-          'X-Request-Id': uuidv4(),
+          'Authorization': window.localStorage.getItem(PoleTokenKey),
+          'X-Polaris-User': window.localStorage.getItem(LoginUserIdKey),
+          'X-Request-Id': reqId,
         },
       })
       .catch(function (error) {
@@ -100,26 +107,27 @@ export async function getApiRequest<T>(options: APIRequestOption) {
           }
         }
         if (error.response?.data) {
-          throw new Error(error.response?.data?.info)
+          throw new Error('请求失败, RequestId: ' + reqId, {cause: error.response?.data?.info})
         }
         throw error;
       })) as AxiosResponse<T & ApiResponse>
     return res.data
   } catch (e) {
-    throw e
+    throw new Error('请求失败, RequestId: ' + reqId, {cause: e})
   }
 }
 
 export async function putApiRequest<T>(options: APIRequestOption) {
   const { action, data = {}, opts } = options
+  const reqId = uuidv4()
   try {
     const res = (await axios
       .put<T & ApiResponse>(action, data, {
         ...opts,
         headers: {
-          'Authorization': window.localStorage.getItem('polaris_token'),
-          'X-Polaris-User': window.localStorage.getItem('login-user-id'),
-          'X-Request-Id': uuidv4(),
+          'Authorization': window.localStorage.getItem(PoleTokenKey),
+          'X-Polaris-User': window.localStorage.getItem(LoginUserIdKey),
+          'X-Request-Id': reqId,
         },
       })
       .catch(function (error) {
@@ -133,28 +141,29 @@ export async function putApiRequest<T>(options: APIRequestOption) {
           }
         }
         if (error.response?.data) {
-          throw new Error(error.response?.data?.info)
+          throw new Error('请求失败, RequestId: ' + reqId, {cause: error.response?.data?.info})
         }
         throw error;
       })) as AxiosResponse<T & ApiResponse>
 
     return res.data
   } catch (e) {
-    throw e
+    throw new Error('请求失败, RequestId: ' + reqId, {cause: e})
   }
 }
 
 export async function deleteApiRequest<T>(options: APIRequestOption) {
   const { action, data = {}, opts } = options
+  const reqId = uuidv4()
   try {
     const res = (await axios
       .delete<T & ApiResponse>(action, {
         params: data,
         ...opts,
         headers: {
-          'Authorization': window.localStorage.getItem('polaris_token'),
-          'X-Polaris-User': window.localStorage.getItem('login-user-id'),
-          'X-Request-Id': uuidv4(),
+          'Authorization': window.localStorage.getItem(PoleTokenKey),
+          'X-Polaris-User': window.localStorage.getItem(LoginUserIdKey),
+          'X-Request-Id': reqId,
         },
       })
       .catch(function (error) {
@@ -167,14 +176,14 @@ export async function deleteApiRequest<T>(options: APIRequestOption) {
           }
         }
         if (error.response?.data) {
-          throw new Error(error.response?.data?.info)
+          throw new Error('请求失败, RequestId: ' + reqId, {cause: error.response?.data?.info})
         }
         throw error;
       })) as AxiosResponse<T & ApiResponse>
 
     return res.data
   } catch (e) {
-    throw e
+    throw new Error('请求失败, RequestId: ' + reqId, {cause: e})
   }
 }
 

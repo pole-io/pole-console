@@ -19,20 +19,13 @@ package handlers
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
-	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/polarismesh/polaris-console/bootstrap"
-	"github.com/polarismesh/polaris-console/common/api"
-	"github.com/polarismesh/polaris-console/common/log"
-	"github.com/polarismesh/polaris-console/common/model"
-	"go.uber.org/zap"
 )
 
 func ReverseHandleBootstrap(poleServer *bootstrap.PoleServer, conf *bootstrap.Config) gin.HandlerFunc {
@@ -99,45 +92,5 @@ func ReverseHandleAdminUserExist(polarisServer *bootstrap.PoleServer, conf *boot
 				return nil
 			}}
 		proxy.ServeHTTP(c.Writer, c.Request)
-	}
-}
-
-type FunctionDesc struct {
-	Name    string `json:"name"`
-	Display string `json:"display"`
-	Tip     string `json:"tip"`
-}
-
-func DescribeFunctuionList() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		exportFuncFile := os.Getenv("POLARIS_EXPORT_FUNCTION_FILE")
-		data, err := ioutil.ReadFile(exportFuncFile)
-		if err != nil {
-			log.Error("read function export file fail", zap.Error(err))
-			resp := model.Response{
-				Code: int32(api.ExecuteSuccess),
-				Data: []FunctionDesc{},
-			}
-			ctx.JSON(model.CalcCode(resp.Code), resp)
-			return
-		}
-
-		ret := make([]FunctionDesc, 0, 4)
-		if err := json.Unmarshal(data, &ret); err != nil {
-			log.Error("unmarshal function export file fail", zap.Error(err))
-			resp := model.Response{
-				Code: int32(api.ExecuteException),
-				Info: err.Error(),
-				Data: []FunctionDesc{},
-			}
-			ctx.JSON(model.CalcCode(resp.Code), resp)
-			return
-		}
-
-		resp := model.Response{
-			Code: int32(api.ExecuteSuccess),
-			Data: ret,
-		}
-		ctx.JSON(model.CalcCode(resp.Code), resp)
 	}
 }

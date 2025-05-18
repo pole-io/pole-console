@@ -46,7 +46,7 @@ const initialState: PolicyRuleState = {
 
 export const savePolicyRules = createAsyncThunk(`policy/create`, async ({ state }: { state: PolicyRuleState }, { fulfillWithValue, rejectWithValue }) => {
     try {
-        const ret = await createAuthPolicies([{ ...state, source: 'pole.io' }]);
+        // const ret = await createAuthPolicies([{ ...state, source: 'pole.io' }]);
         return fulfillWithValue("ok"); // 返回 token
     } catch (error) {
         return rejectWithValue((error as Error).message); // 捕获错误并返回

@@ -15,6 +15,8 @@ export interface UserGroup {
     token_enable?: boolean
     // 简单描述
     comment: string
+    // 用户组来源
+    source?: string
     // 该用户组下的用户ID列表信息
     relation: GroupRelation
     // 创建时间

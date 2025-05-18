@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../store';
 import { MatcheLabel } from 'services/types';
-import { releaseConfigFile, rollbackFileReleases } from 'services/config_release';
+import { deleteFileReleases, releaseConfigFile, rollbackFileReleases } from 'services/config_release';
 
 // State 和 Action 类型定义
 export interface FileReleaseState {
@@ -12,7 +12,7 @@ export interface FileReleaseState {
     name: string
     releaseDescription: string
     version?: number
-    releaseType: 'normal' | 'beta'
+    releaseType: 'normal' | 'gray'
     betaLabels: MatcheLabel[]
     active?: boolean
 }
@@ -40,7 +40,7 @@ export const publishConfigFiles = createAsyncThunk(`config_release/create`, asyn
     }
 });
 
-export const releaseRollback = createAsyncThunk(`config_release/rollback`, async ({ state }: { state: FileReleaseState }, { fulfillWithValue, rejectWithValue }) => {
+export const releaseRollback = createAsyncThunk(`config_release/rollback`, async ({ state }: { state: { namespace: string, group: string, fileName: string, name: string } }, { fulfillWithValue, rejectWithValue }) => {
     try {
         const res = await rollbackFileReleases([state]);
         return fulfillWithValue("ok"); // 返回 token
@@ -49,9 +49,9 @@ export const releaseRollback = createAsyncThunk(`config_release/rollback`, async
     }
 });
 
-export const releasesRemove = createAsyncThunk(`config_release/delete`, async ({ state }: { state: FileReleaseState[] }, { fulfillWithValue, rejectWithValue }) => {
+export const releasesRemove = createAsyncThunk(`config_release/delete`, async ({ state }: { state: { namespace: string, group: string, fileName: string, name: string }[] }, { fulfillWithValue, rejectWithValue }) => {
     try {
-        // const res = await deleteConfigFiles(state);
+        const res = await deleteFileReleases(state);
         return fulfillWithValue("ok"); // 返回 token
     } catch (error) {
         return rejectWithValue((error as Error).message); // 捕获错误并返回

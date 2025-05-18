@@ -1,6 +1,37 @@
 import request, { apiRequest, ApiResponse, getAllList, getApiRequest, putApiRequest } from 'utils/request';
 import { SuccessCode } from './const';
 
+export enum FileStatus {
+    Normal = 'normal',
+    Success = 'success',
+    Fail = 'failure',
+    Edited = 'to-be-released',
+    Betaing = 'gray',
+}
+
+export const FileStatusMap = {
+    [FileStatus.Normal]: {
+        text: '发布成功',
+        theme: 'success',
+    },
+    [FileStatus.Success]: {
+        text: '发布成功',
+        theme: 'success',
+    },
+    [FileStatus.Fail]: {
+        text: '发布失败',
+        theme: 'danger',
+    },
+    [FileStatus.Betaing]: {
+        text: '灰度发布中',
+        theme: 'warning',
+    },
+    [FileStatus.Edited]: {
+        text: '编辑待发布',
+        theme: 'warning',
+    },
+}
+
 export interface ConfigFile {
     id: number
     name: string
@@ -88,7 +119,7 @@ export async function describeAllConfigFiles(params: DescribeAllConfigFilesReque
     const { list: users } = await getAllList(describeConfigFiles, {
         listKey: 'list',
         totalKey: 'totalCount',
-    })({...params, berif: true})
+    })({ ...params, berif: true })
     return users
 }
 

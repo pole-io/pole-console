@@ -1,6 +1,6 @@
 import React, { memo, useRef } from 'react';
 import ErrorPage, { ECode } from 'components/ErrorPage';
-import { Button, Col, Link, PageInfo, PrimaryTableProps, Row, Space, Table, TableProps, TableRowData, Tooltip } from 'tdesign-react';
+import { Button, Col, Link, PageInfo, Popconfirm, PrimaryTableProps, Row, Space, Table, TableProps, TableRowData, Tooltip } from 'tdesign-react';
 import { CreditcardIcon, DeleteIcon, EditIcon, RefreshIcon } from 'tdesign-icons-react';
 
 import Text from 'components/Text';
@@ -20,7 +20,7 @@ interface IConfigGroupTableProps {
 
 const ServerError = () => <ErrorPage code={500} />;
 
-const columns = (handleEditConfigGroup: (row: TableRowData) => void, redirect: (service: string, namespace: string, row: TableRowData) => void): PrimaryTableProps['columns'] => [
+const columns = (handleEditConfigGroup: (row: TableRowData, op: 'edit' | 'delete') => void, redirect: (service: string, namespace: string, row: TableRowData) => void): PrimaryTableProps['columns'] => [
 	{
 		colKey: 'id',
 		title: 'ID',
@@ -32,7 +32,7 @@ const columns = (handleEditConfigGroup: (row: TableRowData) => void, redirect: (
 		title: '分组名',
 		cell: ({ row }) => <Link
 			theme="primary"
-			onClick={() => { redirect(row.name, row.namespace, {...row}) }}
+			onClick={() => { redirect(row.name, row.namespace, { ...row }) }}
 		>{row.name}</Link>,
 	},
 	{
@@ -77,7 +77,7 @@ const columns = (handleEditConfigGroup: (row: TableRowData) => void, redirect: (
 							shape="square"
 							variant="text"
 							disabled={row.editable === false}
-							onClick={() => handleEditConfigGroup(row)}>
+							onClick={() => handleEditConfigGroup(row, 'edit')}>
 							<EditIcon />
 						</Button>
 					</Tooltip>
@@ -87,9 +87,20 @@ const columns = (handleEditConfigGroup: (row: TableRowData) => void, redirect: (
 						</Button>
 					</Tooltip>
 					<Tooltip content={row.deleteable === false ? '无权限操作' : '删除'}>
-						<Button shape="square" variant="text" disabled={row.deleteable === false}>
-							<DeleteIcon />
-						</Button>
+						<Popconfirm
+							content="确认删除吗"
+							destroyOnClose
+							placement="top"
+							showArrow
+							theme="default"
+							onConfirm={() => {
+								handleEditConfigGroup(row, 'delete');
+							}}
+						>
+							<Button shape="square" variant="text" disabled={row.deleteable === false}>
+								<DeleteIcon />
+							</Button>
+						</Popconfirm>
 					</Tooltip>
 				</Space>
 			)
@@ -123,7 +134,7 @@ const ConfigGroupTable: React.FC<IConfigGroupTableProps> = ({ }) => {
 
 
 	// 编辑、新建事件
-	const handleEditConfigGroup = (row: TableRowData) => {
+	const handleEditConfigGroup = (row: TableRowData, op: 'edit' | 'delete') => {
 		dispatch(editorConfigGroup({
 			id: row.id,
 			namespace: row.namespace,
@@ -263,13 +274,13 @@ const ConfigGroupTable: React.FC<IConfigGroupTableProps> = ({ }) => {
 	)
 
 	return (
-        <>
-            {searchState.fetchError ? (
-                <ServerError />
-            ) : (
-                table
-            )}
-        </>
+		<>
+			{searchState.fetchError ? (
+				<ServerError />
+			) : (
+				table
+			)}
+		</>
 	);
 }
 

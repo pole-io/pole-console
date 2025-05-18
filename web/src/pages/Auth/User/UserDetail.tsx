@@ -1,18 +1,19 @@
-import LabelInput from "components/LabelInput";
 import React from "react";
-import { Card, Form, Input, Link, Loading, Popup, Space, Table, Tag, TableProps, Collapse, Row, Col, Breadcrumb } from "tdesign-react";
+import { Card, Form, Input, Link, Loading, Popup, Space, Table, Tag, TableProps, Breadcrumb, Descriptions, Tabs } from "tdesign-react";
 import type { FormProps } from 'tdesign-react';
+import { DiscountIcon } from "tdesign-icons-react";
 import { useNavigate, useLocation } from 'react-router-dom';
 
+import LabelInput from "components/LabelInput";
 import { useAppDispatch, useAppSelector } from 'modules/store';
 import { enableUserToken, resetUserToken } from "modules/user/users";
 import { describeUsers, describeUserToken, User } from "services/users";
 import { openErrNotification, openInfoNotification } from "utils/notifition";
-import namespace from "modules/namespace";
-import { redirect } from "react-router-dom";
 
 const { FormItem } = Form;
 const { BreadcrumbItem } = Breadcrumb;
+const { DescriptionsItem } = Descriptions;
+const { TabPanel } = Tabs;
 
 interface IUserDetailProps {
 
@@ -82,42 +83,26 @@ const UserDetailTable: React.FC<IUserDetailProps> = ({ }) => {
             onSubmit={onSubmit}
         >
             <Space direction="vertical" style={{ width: '100%' }}>
-                <Row>
-                    <Col span={6}>
-                        <FormItem label={'ID'} name={'id'} shouldUpdate={true}>
-                            <Input borderless={true} readonly defaultValue={viewState.user?.id} placeholder="" />
-                        </FormItem>
-                    </Col>
-                    <Col span={6}>
-                        <FormItem label={'用户名'} name={'name'} shouldUpdate={true}>
-                            <Input borderless={true} readonly defaultValue={viewState.user?.name} placeholder="" />
-                        </FormItem>
-                    </Col>
-                </Row>
-                <Row>
-                    <Col span={6}>
-                        <FormItem label={'备注'} name={'comment'} shouldUpdate={true}>
-                            <Input borderless={true} readonly defaultValue={viewState.user?.comment} placeholder="" />
-                        </FormItem>
-                    </Col>
-                    <Col span={6}>
-                        <FormItem label={'来源'} name={'source'} shouldUpdate={true}>
-                            <Input borderless={true} readonly defaultValue={viewState.user?.source} placeholder="" />
-                        </FormItem>
-                    </Col>
-                </Row>
-                <Row>
-                    <Col span={6}>
-                        <FormItem label={'邮箱'} name={'email'} shouldUpdate={true}>
-                            <Input borderless={true} readonly defaultValue={viewState.user?.email} placeholder="" />
-                        </FormItem>
-                    </Col>
-                    <Col span={6}>
-                        <FormItem label={'手机号'} name={'mobile'} shouldUpdate={true}>
-                            <Input borderless={true} readonly defaultValue={viewState.user?.mobile} placeholder="" />
-                        </FormItem>
-                    </Col>
-                </Row>
+                <Descriptions column={2} tableLayout="auto" itemLayout="horizontal">
+                    <DescriptionsItem label="用户ID">
+                        {viewState.user?.id}
+                    </DescriptionsItem>
+                    <DescriptionsItem label="备注">
+                        {viewState.user?.comment}
+                    </DescriptionsItem>
+                    <DescriptionsItem label="用户名">
+                        {viewState.user?.name}
+                    </DescriptionsItem>
+                    <DescriptionsItem label="来源">
+                        {viewState.user?.source}
+                    </DescriptionsItem>
+                    <DescriptionsItem label="邮箱">
+                        {viewState.user?.email}
+                    </DescriptionsItem>
+                    <DescriptionsItem label="手机号">
+                        {viewState.user?.mobile}
+                    </DescriptionsItem>
+                </Descriptions>
                 <FormItem label="资源访问凭据" name="token_enable" shouldUpdate={true}>
                     <Table
                         rowKey="id"
@@ -202,7 +187,14 @@ const UserDetailTable: React.FC<IUserDetailProps> = ({ }) => {
                     <BreadcrumbItem>{username}</BreadcrumbItem>
                 </Breadcrumb>
                 <Card
-                    title={`用户 ${username} 详情`}
+                    title={
+                        <>
+                            {`用户 ${username} 详情`}
+                            <Tag icon={<DiscountIcon />} style={{marginLeft: 10}} theme="default">
+                                {viewState.user?.user_type === 'main' ? '管理员' : '子用户'}
+                            </Tag>
+                        </>
+                    }
                     actions={
                         <Link theme="primary" onClick={handleChangePassword} style={{ cursor: 'pointer' }}>
                             修改密码
@@ -219,6 +211,20 @@ const UserDetailTable: React.FC<IUserDetailProps> = ({ }) => {
                         {userForm}
                     </Loading>
                 </Card>
+
+                {viewState.user.user_type !== 'main' && (
+                    <Card>
+                        <Tabs>
+                            <TabPanel value="user-group" label="用户组信息">
+                            </TabPanel>
+                            <TabPanel value="role" label="角色信息">
+                            </TabPanel>
+                            <TabPanel value="permission" label="权限信息">
+                            </TabPanel>
+                        </Tabs>
+                    </Card>
+                )}
+
             </Space>
         </>
     )

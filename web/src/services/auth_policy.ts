@@ -26,7 +26,7 @@ export interface PolicyRule {
     // 服务端接口
     functions?: string[]
     // 策略生效的资源标签
-    resource_labels?: string[]
+    resource_labels?: PolicyResourceLabel[]
     // 策略资源标签
     metadata?: Record<string, string>
 }
@@ -43,8 +43,6 @@ export interface Principals {
 
 // 鉴权策略资源信息
 export interface PolicyResources {
-    // 鉴权策略ID
-    strategy_id?: string
     // 命名空间ID列表
     namespaces?: PolicyResource[]
     // 服务ID列表
@@ -81,7 +79,7 @@ export interface PolicyResource {
     name?: string
 }
 
-export interface StrategyResourceLabel {
+export interface PolicyResourceLabel {
     // 标签键
     key?: string
     // 标签值
@@ -148,6 +146,18 @@ export async function describeAuthPolicies(params: DescribeAuthPoliciesRequest) 
     return {
         totalCount: result.amount,
         content: result.authStrategies ? result.authStrategies : [],
+    }
+}
+
+export async function describeAllAuthPolicies() {
+    const result = await getAllList(describeAuthPolicies, {
+        listKey: 'content',
+        totalKey: 'totalCount',
+    })({default: 'false'})
+    // 不会查询默认策略
+    return {
+        totalCount: result.totalCount,
+        content: result.list ? result.list : [],
     }
 }
 
@@ -281,7 +291,7 @@ export async function describeAuthStatus(params: CheckAuthParams) {
 
 export async function describeServerFunctions() {
     const result = await getApiRequest<ServerFunctionGroup[]>({
-        action: 'maintain/v1/server/functions',
+        action: '/admin/v1/server/functions',
     })
     for (let i = 0; i < result.length; ++i) {
         result[i].id = result[i].name

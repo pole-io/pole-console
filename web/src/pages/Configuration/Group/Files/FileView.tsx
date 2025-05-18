@@ -1,12 +1,12 @@
 import React, { } from 'react';
-import { Form, Space, Button, Row, Descriptions, Input, Switch, Select, StickyTool, Drawer } from "tdesign-react";
+import { Form, Space, Button, Row, Descriptions, Input, Switch, Select, StickyTool, Drawer, Tag } from "tdesign-react";
 
 import { useAppDispatch, useAppSelector } from 'modules/store';;
 import { openErrNotification, openInfoNotification } from 'utils/notifition';
 import CodeEditor from 'components/CodeEditor';
 import DescriptionsItem from 'tdesign-react/es/descriptions/DescriptionsItem';
 import { selectConfigFile, updateConfigFiles } from 'modules/configuration/file';
-import { ConfigFile, describeEncryptAlgo, describeOneConfigFile } from 'services/config_files';
+import { ConfigFile, describeEncryptAlgo, describeOneConfigFile, FileStatusMap } from 'services/config_files';
 import LabelInput from 'components/LabelInput';
 import { Edit1Icon, SaveIcon, RocketIcon, LightbulbIcon, Delete1Icon, RollbackIcon } from 'tdesign-icons-react';
 import StickyItem from 'tdesign-react/es/sticky-tool/StickyItem';
@@ -38,7 +38,7 @@ const FileView: React.FC<IFileViewProps> = (props) => {
         try {
             const ret = await describeOneConfigFile({ namespace: namespace, group: group, name: name });
             setFileInfo(ret.configFile);
-            setEditorState({ ...editorState, content: ret.configFile.content || '' });
+            setEditorState(prev => ({ ...prev, content: ret.configFile.content || '' }));
         } catch (err) {
             openErrNotification('获取配置文件详细失败', err as string);
         }
@@ -52,7 +52,7 @@ const FileView: React.FC<IFileViewProps> = (props) => {
                 label: item,
                 value: item
             }));
-            setEditorState({ ...editorState, encryptAlgo: algoList });
+            setEditorState(prev => ({ ...prev, encryptAlgo: algoList }));
         } catch (err) {
             openErrNotification('获取加密算法列表失败', err as string);
         }
@@ -77,7 +77,6 @@ const FileView: React.FC<IFileViewProps> = (props) => {
             content: editorState.content || '',
             tags: form.getFieldValue('file_tags') as { key: string, value: string }[],
         }
-        console.log('updateData', updateData);
         const result = await dispatch(updateConfigFiles({ state: updateData }));
         if (result.meta.requestStatus !== 'fulfilled') {
             openErrNotification('请求错误', result?.payload as string);
@@ -85,12 +84,8 @@ const FileView: React.FC<IFileViewProps> = (props) => {
             openInfoNotification('保存成功', '配置文件已成功保存');
             // 重新获取文件信息
             fetchConfigFileDetail();
-            setEditorState({ ...editorState, model: 'view' });
+            setEditorState(prev => ({ ...prev, model: 'view' }));
         }
-    }
-
-    const handlePublishFile = async () => {
-
     }
 
     const editor = (
@@ -106,7 +101,7 @@ const FileView: React.FC<IFileViewProps> = (props) => {
                             column={3}
                         >
                             <DescriptionsItem label="发布状态">
-                                {fileInfo?.status}
+                                <Tag theme={FileStatusMap?.[fileInfo?.status as keyof typeof FileStatusMap]?.theme as "success" | "danger" | "default" | "primary" | "warning"} variant="outline">{FileStatusMap?.[fileInfo?.status as keyof typeof FileStatusMap]?.text ?? '-'}</Tag>
                             </DescriptionsItem>
                             <DescriptionsItem label="文件格式">
                                 {fileInfo?.format}
@@ -133,7 +128,7 @@ const FileView: React.FC<IFileViewProps> = (props) => {
                             value={editorState.content}
                             onChange={(value: string | undefined) => {
                                 if (fileInfo) {
-                                    setEditorState({ ...editorState, content: value || '' });
+                                    setEditorState(prev => ({ ...prev, content: value || '' }));
                                 }
                             }}
                         />
@@ -188,7 +183,9 @@ const FileView: React.FC<IFileViewProps> = (props) => {
                     filename={name}
                     visible={editorState.publishView}
                     close={() => {
-                        setEditorState({ ...editorState, publishView: false });
+                        setEditorState(prev => ({ ...prev, publishView: false }));
+                        // 重新获取文件信息
+                        fetchConfigFileDetail();
                     }}
                 />
             )}
@@ -204,7 +201,7 @@ const FileView: React.FC<IFileViewProps> = (props) => {
                             icon={editorState.model === 'view' ?
                                 <Edit1Icon onClick={() => {
                                     if (editorState.model === 'view') {
-                                        setEditorState({ ...editorState, model: 'edit' });
+                                        setEditorState(prev => ({ ...prev, model: 'edit' }));
                                     }
                                 }} />
                                 :
@@ -218,20 +215,15 @@ const FileView: React.FC<IFileViewProps> = (props) => {
                     {(editorState.model === 'edit' && props.editable) && (
                         <StickyItem label="撤销" icon={
                             <RollbackIcon onClick={() => {
-                                setEditorState({ ...editorState, model: 'view', content: fileInfo?.content || '' });
+                                setEditorState(prev => ({ ...prev, model: 'view', content: fileInfo?.content || '' }));
                             }} />}
                         />
                     )}
                     {(editorState.model === 'view' && props.editable) && (
                         <StickyItem label="发布" icon={
                             <RocketIcon onClick={() => {
-                                setEditorState({ ...editorState, publishView: true });
+                                setEditorState(prev => ({ ...prev, publishView: true }));
                             }} />}
-                        />
-                    )}
-                    {props.deleteable && (
-                        <StickyItem label="删除" icon={
-                            <Delete1Icon style={{ color: 'red' }} />}
                         />
                     )}
                 </StickyTool>

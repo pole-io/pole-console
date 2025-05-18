@@ -213,13 +213,13 @@ const InstanceEditor: React.FC<IInstanceEditorProps> = ({ visible, op, modify, c
             </FormItem>
             <Space>
                 <FormItem name={['location', 'region']} initialData={[location.region]} label={'位置'}>
-                    <Input readonly={op === 'view'} label={'区域'} placeholder='' />
+                    <Input readonly={op === 'view'} label={'区域=>'} placeholder='' />
                 </FormItem>
                 <FormItem name={['location', 'zone']} initialData={[location.zone]}>
-                    <Input readonly={op === 'view'} label={'可用区'} placeholder='' />
+                    <Input readonly={op === 'view'} label={'可用区=>'} placeholder='' />
                 </FormItem>
                 <FormItem name={['location', 'campus']} initialData={[location.campus]}>
-                    <Input readonly={op === 'view'} label={'机房'} placeholder='' />
+                    <Input readonly={op === 'view'} label={'机房=>'} placeholder='' />
                 </FormItem>
             </Space>
             <LabelInput form={form} label='实例标签' name='instance_labels' disabled={op === 'view'} />

@@ -41,8 +41,24 @@ const auth: IRouter[] = [
         },
       },
       {
+        path: 'users/groupdetail',
+        Component: lazy(() => import('pages/Auth/User/GroupDetail')),
+        isFullPage: false,
+        meta: {
+          hidden: true,
+        },
+      },
+      {
         path: 'policies/detail',
         Component: lazy(() => import('pages/Auth/Policy/PolicyDetail')),
+        isFullPage: false,
+        meta: {
+          hidden: true,
+        },
+      },
+      {
+        path: 'roles/detail',
+        Component: lazy(() => import('pages/Auth/Role/RoleDetail')),
         isFullPage: false,
         meta: {
           hidden: true,

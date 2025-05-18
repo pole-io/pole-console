@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, Table, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData, Tabs, Tag, Dialog, Input, Loading } from 'tdesign-react';
+import { Link, Table, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData, Tabs, Tag, Dialog, Input, Loading, Popconfirm } from 'tdesign-react';
 import { DeleteIcon, EditIcon, RefreshIcon, System2Icon, User1Icon, UsergroupIcon, UserVisibleIcon } from 'tdesign-icons-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -65,21 +65,29 @@ const customColumns = (handleEditRole: (row: TableRowData, op: 'view' | 'create'
                             shape="square"
                             variant="text"
                             disabled={row.editable === false}
-                            onClick={() => handleEditRole(row, 'edit', 'user')}>
+                            onClick={() => handleEditRole(row, 'edit', 'role')}>
                             <EditIcon />
                         </Button>
                     </Tooltip>
                     <Tooltip content={row.deleteable === false ? '无权限操作' : '删除'}>
-                        <Button
-                            shape="square"
-                            variant="text"
-                            disabled={row.deleteable === false}
-                            onClick={() => {
-                                handleEditRole(row, 'delete', 'user');
+                        <Popconfirm
+                            content="确认删除吗"
+                            destroyOnClose
+                            placement="top"
+                            showArrow
+                            theme="default"
+                            onConfirm={() => {
+                                handleEditRole(row, 'delete', 'role');
                             }}
                         >
-                            <DeleteIcon />
-                        </Button>
+                            <Button
+                                shape="square"
+                                variant="text"
+                                disabled={row.deleteable === false}
+                            >
+                                <DeleteIcon />
+                            </Button>
+                        </Popconfirm>
                     </Tooltip>
                 </Space>
             )

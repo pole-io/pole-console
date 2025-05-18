@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, Popup, Table, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData, Tabs, Loading } from 'tdesign-react';
+import { Link, Popup, Table, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData, Tabs, Loading, Popconfirm } from 'tdesign-react';
 import { DeleteIcon, EditIcon, RefreshIcon, CreditcardIcon } from 'tdesign-icons-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -19,7 +19,7 @@ interface IServiceAliasProps {
 
 const ServerError = () => <ErrorPage code={500} />;
 
-const columns = (handleEditService: (row: TableRowData) => void, redirect: (service: string, namespace: string) => void): PrimaryTableProps['columns'] => [
+const columns = (handleEditService: (row: TableRowData, op: 'edit' | 'delete') => void, redirect: (service: string, namespace: string) => void): PrimaryTableProps['columns'] => [
     {
         colKey: 'id',
         title: 'ID',
@@ -78,7 +78,7 @@ const columns = (handleEditService: (row: TableRowData) => void, redirect: (serv
                             shape="square"
                             variant="text"
                             disabled={row.editable === false}
-                            onClick={() => handleEditService(row)}>
+                            onClick={() => handleEditService(row, 'edit')}>
                             <EditIcon />
                         </Button>
                     </Tooltip>
@@ -88,9 +88,21 @@ const columns = (handleEditService: (row: TableRowData) => void, redirect: (serv
                         </Button>
                     </Tooltip>
                     <Tooltip content={row.deleteable === false ? '无权限操作' : '删除'}>
-                        <Button shape="square" variant="text" disabled={row.deleteable === false}>
-                            <DeleteIcon />
-                        </Button>
+                        <Popconfirm
+                            content="确认删除吗"
+                            destroyOnClose
+                            placement="top"
+                            showArrow
+                            theme="default"
+                            onConfirm={() => {
+                                handleEditService(row, 'delete');
+                            }}
+                        >
+                            <Button shape="square" variant="text" disabled={row.deleteable === false}>
+                                <DeleteIcon />
+                            </Button>
+                        </Popconfirm>
+
                     </Tooltip>
                 </Space>
             )
@@ -123,7 +135,7 @@ const ServiceAliasTable: React.FC<IServiceAliasProps> = ({ }) => {
     }>({ visible: false, mode: 'create', data: undefined });
 
     // 编辑、新建事件
-    const handleEditService = (row: TableRowData) => {
+    const handleEditService = (row: TableRowData, op: 'edit' | 'delete') => {
         dispatch(editorServiceAlias({
             namespace: row.namespace,
             service: row.name,

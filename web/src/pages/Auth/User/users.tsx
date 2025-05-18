@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, Popup, Table, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData, Tabs, Tag, Dialog, Input, Loading } from 'tdesign-react';
+import { Link, Popup, Table, Button, PageInfo, PrimaryTableProps, TableProps, Tooltip, Space, Row, Col, TableRowData, Tabs, Tag, Dialog, Input, Loading, Popconfirm } from 'tdesign-react';
 import { DeleteIcon, EditIcon, RefreshIcon, UserVisibleIcon } from 'tdesign-icons-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -90,16 +90,24 @@ const columns = (handleEditUser: (row: TableRowData, op: 'view' | 'create' | 'ed
                     </Tooltip>
                     {row.user_type !== 'main' && (
                         <Tooltip content={row.deleteable === false ? '无权限操作' : '删除'}>
-                            <Button
-                                shape="square"
-                                variant="text"
-                                disabled={row.deleteable === false}
-                                onClick={() => {
+                            <Popconfirm
+                                content="确认删除吗"
+                                destroyOnClose
+                                placement="top"
+                                showArrow
+                                theme="default"
+                                onConfirm={() => {
                                     handleEditUser(row, 'delete', 'user');
                                 }}
                             >
-                                <DeleteIcon />
-                            </Button>
+                                <Button
+                                    shape="square"
+                                    variant="text"
+                                    disabled={row.deleteable === false}
+                                >
+                                    <DeleteIcon />
+                                </Button>
+                            </Popconfirm>
                         </Tooltip>
                     )}
                 </Space>
@@ -135,17 +143,6 @@ const UsersTable: React.FC<IUsersProps> = ({ }) => {
 
     // 编辑、新建事件
     const handleEditUser = (row: TableRowData, mode: 'view' | 'create' | 'edit' | 'delete', res: string) => {
-        dispatch(editorUser({
-            id: row.id as string,
-            name: row.name as string,
-            password: '',
-            token_enable: row.token_enable as boolean,
-            comment: row.comment as string,
-            email: row.email as string,
-            mobile: row.mobile as string,
-            metadata: row.metadata as Record<string, string>
-        }))
-
         if (mode === 'delete') {
             setSearchState(s => ({ ...s, isLoading: true }));
             dispatch(removeUsers({ ids: [row.id as string] }))
@@ -160,6 +157,16 @@ const UsersTable: React.FC<IUsersProps> = ({ }) => {
                 });
             return;
         }
+        dispatch(editorUser({
+            id: row.id as string,
+            name: row.name as string,
+            password: '',
+            token_enable: row.token_enable as boolean,
+            comment: row.comment as string,
+            email: row.email as string,
+            mobile: row.mobile as string,
+            metadata: row.metadata as Record<string, string>
+        }))
 
         setEditorState({
             visible: true,
