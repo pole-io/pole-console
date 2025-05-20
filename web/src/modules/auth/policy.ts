@@ -43,7 +43,6 @@ const initialState: PolicyRuleState = {
     metadata: {}
 };
 
-
 export const savePolicyRules = createAsyncThunk(`policy/create`, async ({ state }: { state: PolicyRuleState }, { fulfillWithValue, rejectWithValue }) => {
     try {
         // const ret = await createAuthPolicies([{ ...state, source: 'pole.io' }]);
@@ -54,6 +53,14 @@ export const savePolicyRules = createAsyncThunk(`policy/create`, async ({ state 
 });
 
 export const updatePolicyRules = createAsyncThunk(`policy/update`, async ({ state }: { state: PolicyRuleState }, { fulfillWithValue, rejectWithValue }) => {
+    try {
+        return fulfillWithValue("ok"); // 返回 token
+    } catch (error) {
+        return rejectWithValue((error as Error).message); // 捕获错误并返回
+    }
+});
+
+export const removePolicyRules = createAsyncThunk(`policy/remove`, async ({ ids }: { ids: string[] }, { fulfillWithValue, rejectWithValue }) => {
     try {
         return fulfillWithValue("ok"); // 返回 token
     } catch (error) {
@@ -88,6 +95,5 @@ export const {
     resetPolicyRules,
 } = policyRuleReducer.actions;
 export const selectPolicyRule = (state: RootState) => state.authPolicyRules;
-
 
 export default policyRuleReducer.reducer;

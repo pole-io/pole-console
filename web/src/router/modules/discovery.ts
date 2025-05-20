@@ -18,13 +18,6 @@ const discovery: IRouter[] = [
         },
       },
       {
-        path: 'gateway',
-        Component: lazy(() => import('pages/Discovery/Gateway')),
-        meta: {
-          title: '网关',
-        },
-      },
-      {
         path: 'kubernetes',
         Component: lazy(() => import('pages/Discovery/Kubernetes')),
         meta: {

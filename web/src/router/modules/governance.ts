@@ -13,19 +13,24 @@ const result: IRouter[] = [
       {
         path: 'router',
         Component: lazy(() => import('pages/Governance/Router')),
-        meta: { title: '路由规则' },
+        meta: { title: '路由转发' },
       },
       {
         path: 'ratelimit',
         Component: lazy(() => import('pages/Governance/RateLimit')),
         meta: {
-          title: '限流规则',
+          title: '访问限流',
         },
       },
       {
         path: 'circuitbreaker',
         Component: lazy(() => import('pages/Governance/CircuitBreaker')),
-        meta: { title: '熔断规则' },
+        meta: { title: '熔断探测' },
+      },
+      {
+        path: 'security',
+        Component: lazy(() => import('pages/Governance/Security')),
+        meta: { title: '服务鉴权' },
       }
     ],
   },

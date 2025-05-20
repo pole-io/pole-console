@@ -18,14 +18,9 @@ const configuration: IRouter[] = [
         },
       },
       {
-        path: 'template',
-        Component: lazy(() => import('pages/Configuration/Template')),
-        meta: { title: '模板' },
-      },
-      {
         path: 'kubernetes',
         Component: lazy(() => import('pages/Configuration/Kubernetes')),
-        meta: { title: 'ConfigMap' },
+        meta: { title: '容器' },
       },
       // 这里的路由是为了在服务列表中点击实例跳转到实例详情页
       {

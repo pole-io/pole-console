@@ -4,7 +4,7 @@ import TabPanel from 'tdesign-react/es/tabs/TabPanel';
 
 import ServiceAliasTable from './alias';
 import ServicesTable from './services';
-import ServiceSubscribeTable from './subscribe';
+import GatewayTable from './gateway';
 
 export default React.memo(() => {
 
@@ -29,13 +29,13 @@ export default React.memo(() => {
                         <ServiceAliasTable />
                     </div>
                 </TabPanel>
-                <TabPanel label="订阅查询" value="3">
+                <TabPanel label="网关" value="3">
                     <div
                         style={{
                             margin: 20
                         }}
                     >
-                        <ServiceSubscribeTable />
+                        <GatewayTable />
                     </div>
                 </TabPanel>
             </Tabs>

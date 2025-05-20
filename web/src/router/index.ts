@@ -1,6 +1,5 @@
 import React, { lazy } from 'react';
 import { BrowserRouterProps } from 'react-router-dom';
-import dashboard from './modules/dashboard'
 import namespace from './modules/namespace';
 import discovery from './modules/discovery';
 import configuration from './modules/configuration';
@@ -45,10 +44,10 @@ const routes: IRouter[] = [
   },
   {
     path: '/',
-    redirect: '/dashboard',
+    redirect: '/namespace',
   },
 ];
 
-const allRoutes = [...routes, ...dashboard, ...namespace, ...discovery, ...configuration, ...governance, ...metrics, ...auth];
+const allRoutes = [...routes, ...namespace, ...discovery, ...configuration, ...governance, ...metrics, ...auth];
 
 export default allRoutes;

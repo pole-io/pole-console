@@ -26,7 +26,7 @@ export default memo(() => {
 
   const clickHandler = (data: any) => {
     if (data.value === 1) {
-      navigate('/dashboard');
+      navigate('/namespace');
     }
   };
   const handleLogout = async () => {

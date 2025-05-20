@@ -9,9 +9,10 @@ import Text from 'components/Text';
 import { useAppDispatch, useAppSelector } from 'modules/store';
 import { openErrNotification, openInfoNotification } from 'utils/notifition';
 import style from './index.module.less';
-import { removeUsers, resetUser } from 'modules/user/users';
 import { describeAuthPolicies } from 'services/auth_policy';
 import PolicyEditor from './PolicyEditor';
+import { editorPolicyRules, removePolicyRules, resetPolicyRules, updatePolicyRules } from 'modules/auth/policy';
+import { update } from 'lodash';
 
 interface IPolicyTableProps {
     type: 'default' | 'custom';
@@ -99,7 +100,7 @@ const defaultColumns = (handleEditPolicy: (row: TableRowData, op: 'view' | 'crea
                             shape="square"
                             variant="text"
                             disabled={row.editable === false}
-                            onClick={() => handleEditPolicy(row, 'edit', 'user')}>
+                            onClick={() => handleEditPolicy(row, 'edit', 'policy_rule')}>
                             <EditIcon />
                         </Button>
                     </Tooltip>
@@ -110,7 +111,7 @@ const defaultColumns = (handleEditPolicy: (row: TableRowData, op: 'view' | 'crea
                                 variant="text"
                                 disabled={row.deleteable === false}
                                 onClick={() => {
-                                    handleEditPolicy(row, 'delete', 'user');
+                                    handleEditPolicy(row, 'delete', 'policy_rule');
                                 }}
                             >
                                 <DeleteIcon />
@@ -236,18 +237,26 @@ const PolicyTable: React.FC<IPolicyTableProps> = (props) => {
     const handleEditPolicy = (row: TableRowData, mode: 'view' | 'create' | 'edit' | 'delete', res: string) => {
         if (mode === 'delete') {
             setSearchState(s => ({ ...s, isLoading: true }));
-            dispatch(removeUsers({ ids: [row.id as string] }))
+            dispatch(removePolicyRules({ ids: [row.id as string] }))
                 .then((res) => {
-                    openInfoNotification("删除用户成功", "删除用户成功");
+                    openInfoNotification("请求成功", "删除鉴权策略成功");
                 })
                 .catch((err) => {
-                    openErrNotification("删除用户失败", err);
+                    openErrNotification("请求失败", err);
                 })
                 .finally(() => {
                     setSearchState(s => ({ ...s, isLoading: false }));
                 });
             return;
         }
+        dispatch(editorPolicyRules({
+            id: row.id as string,
+            name: row.name,
+            action: row.action,
+            comment: row.comment,
+            default_strategy: row.default_strategy,
+            metadata: row.metadata,
+        }));
 
         setEditorState({
             visible: true,
@@ -261,7 +270,7 @@ const PolicyTable: React.FC<IPolicyTableProps> = (props) => {
         setEditorState({
             visible: true,
             mode: 'create',
-            resource: 'user',
+            resource: 'policy_rule',
             data: undefined,
         });
     };
@@ -330,16 +339,12 @@ const PolicyTable: React.FC<IPolicyTableProps> = (props) => {
             </Row>
             <PolicyEditor
                 key={editorState.mode + (editorState.data?.name || 'new') + (editorState.visible ? '1' : '0')}
-                visible={editorState.visible && editorState.resource === 'user'}
+                visible={editorState.visible && editorState.resource === 'policy_rule'}
                 closeDrawer={() => {
                     // 关闭后重置编辑器状态
-                    dispatch(resetUser());
+                    dispatch(resetPolicyRules());
                     setEditorState(s => ({ ...s, visible: false }));
-                    // 重新加载数据
-                    console.log('重新加载数据');
-                    setTimeout(() => {
-                        fetchData({ current: searchState.current, pageSize: searchState.limit, previous: searchState.previous }, searchState.query);
-                    }, 1000);
+                    fetchData({ current: 1, pageSize: searchState.limit, previous: 0 }, '');
                 }} op={editorState.mode} />
             <Table
                 data={searchState.policies}

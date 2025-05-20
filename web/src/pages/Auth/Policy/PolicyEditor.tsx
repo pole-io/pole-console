@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Drawer, Form, Input, Space, Button, Radio, Steps, Tree, Transfer, RadioGroup, Row, Col } from "tdesign-react";
+import { Drawer, Form, Input, Space, Button, Radio, Steps, Tree, Transfer, RadioGroup, Row, Col, Switch, SelectInput, Select, Textarea } from "tdesign-react";
 import type { FormProps } from 'tdesign-react';
 
 import style from './index.module.less';
@@ -10,14 +10,65 @@ import { savePolicyRules, selectPolicyRule, updatePolicyRules } from 'modules/au
 import { describeAllUsers } from 'services/users';
 import { describeAllUserGroups } from 'services/user_group';
 import { describeAllRoles } from 'services/role';
-import { describeAllAuthPolicies, describeServerFunctions, getServerFunctionDesc, ServerFunction, ServerFunctionGroup } from 'services/auth_policy';
+import { describeAllAuthPolicies, describeAuthPolicyDetail, describeServerFunctions, getServerFunctionDesc, ServerFunction, ServerFunctionGroup } from 'services/auth_policy';
 import { describeAllNamespaces } from 'services/namespace';
 import { describeAllServices } from 'services/service';
 import { describeAllConfigGroups } from 'services/config_group';
-import { v4 as uuidv4 } from 'uuid';
+import RateLimit from 'pages/Governance/RateLimit';
+import { Server } from 'node:http';
 
 const { FormItem } = Form;
 const { StepItem } = Steps;
+
+type StepType = 'base' | 'principal' | 'resource' | 'interface';
+type StepInfo = {
+    [key: number]: {
+        Cur: StepType;
+        Prev: StepType;
+        Next: StepType;
+    };
+}
+
+const customStepNext: StepInfo = {
+    1: {
+        Cur: 'base',
+        Prev: 'base',
+        Next: 'principal'
+    },
+    2: {
+        Cur: 'principal',
+        Prev: 'base',
+        Next: 'resource'
+    },
+    3: {
+        Cur: 'resource',
+        Prev: 'principal',
+        Next: 'interface'
+    },
+    4: {
+        Cur: 'interface',
+        Prev: 'resource',
+        Next: 'interface'
+    }
+}
+
+const defaultStepNext: StepInfo = {
+    1: {
+        Cur: 'base',
+        Prev: 'base',
+        Next: 'resource'
+    },
+    2: {
+        Cur: 'resource',
+        Prev: 'base',
+        Next: 'interface'
+    },
+    3: {
+        Cur: 'interface',
+        Prev: 'resource',
+        Next: 'interface'
+    },
+}
 
 const resourceTree = [
     { label: '命名空间', value: 'Namespace' },
@@ -40,15 +91,15 @@ const principalTree = [
 ]
 
 const serverFunctionTree = [
-    { label: "客户端", value: "Client" },
-    { label: "命名空间", value: "Namespace" },
-    { label: "服务", value: "Service|ServiceContract" },
-    { label: "实例", value: "Instance" },
-    { label: "治理规则", value: "RouteRule|RateLimitRule|CircuitBreakerRule|FaultDetectRule" },
-    { label: "配置分组", value: "ConfigGroup" },
-    { label: "配置文件", value: "ConfigFile|ConfigRelease" },
-    { label: "用户", value: "User" },
-    { label: "用户组", value: "UserGroup" },
+    { label: "客户端", value: 'Client' },
+    { label: "命名空间", value: 'Namespace' },
+    { label: "服务", value: 'Service|ServiceContract' },
+    { label: "实例", value: 'Instance' },
+    { label: "治理规则", value: 'RouteRule|RateLimitRule|CircuitBreakerRule|FaultDetectRule' },
+    { label: "配置分组", value: 'ConfigGroup' },
+    { label: "配置文件", value: 'ConfigFile|ConfigRelease' },
+    { label: "用户", value: 'User' },
+    { label: "用户组", value: 'UserGroup' },
     { label: "鉴权策略", value: "AuthPolicy" },
 ];
 
@@ -75,11 +126,16 @@ const PolicyEditor: React.FC<IPolicyEditorProps> = ({ visible, op, closeDrawer }
         activeFuncNode: string;
         activeResNode: string;
         selectResources: { [key: string]: { all: boolean; ids: string[] } };
-        selectFunctions: { [key: string]: { group: string; functions: string[] } };
         selectPrincipals: { [key: string]: { all: boolean; ids: string[] } };
+        // selectFunctions 用于小白化的勾选页面操作
+        selectFunctions: { [key: string]: { group: string; functions: string[] } };
+        // customFunctions 用于主动填写方法接口信息，支持前缀匹配的填写操作
+        customFunctions: string[];
+        // useAllFunc 是否全部接口（包括新增）
         useAllFunc: boolean;
+        // swithCustomFunc 是否让用户自行编辑接口授权的信息
+        swithCustomFunc: boolean;
         formValues: any; // 新增字段
-        version: string;
     }>({
         functionOptions: [],
         viewFunctionOptions: [],
@@ -91,11 +147,12 @@ const PolicyEditor: React.FC<IPolicyEditorProps> = ({ visible, op, closeDrawer }
         activeFuncNode: 'Namespace',
         activeResNode: 'Namespace',
         selectResources: {},
-        selectFunctions: {} as { [key: string]: { group: string; functions: string[] } },
         selectPrincipals: {} as { [key: string]: { all: boolean; ids: string[] } },
+        selectFunctions: {} as { [key: string]: { group: string; functions: string[] } },
+        customFunctions: [],
+        swithCustomFunc: false,
         useAllFunc: false,
         formValues: {}, // 新增字段
-        version: uuidv4(),
     });
 
     // Helper functions to update individual state properties
@@ -115,6 +172,9 @@ const PolicyEditor: React.FC<IPolicyEditorProps> = ({ visible, op, closeDrawer }
                 label: item.desc,
             }));
 
+            if (op === 'edit') {
+                await loadCurRule(serverFnRes.list);
+            }
             setState(prev => ({
                 ...prev,
                 principalOptions: {
@@ -131,22 +191,138 @@ const PolicyEditor: React.FC<IPolicyEditorProps> = ({ visible, op, closeDrawer }
         }
     }
 
+    const transferFunctions = (functions: string[], functionOptions: ServerFunctionGroup[]): { [key: string]: { group: string; functions: string[] } } => {
+        return functions?.reduce((result: { [key: string]: { group: string; functions: string[] } }, func: string) => {
+            // If it's a wildcard function, don't process further
+            if (func === '*') {
+                setState(prev => ({ ...prev, useAllFunc: true }));
+                return result;
+            }
+
+            // Find which group this function belongs to
+            for (const group of functionOptions) {
+                for (const f of group.functions) {
+                    // Remove any * suffix from the function name
+                    const cleanFunc = func.endsWith('*') ? func.slice(0, -1) : func;
+                    if (f === cleanFunc || f.startsWith(`${cleanFunc}`)) {
+                        let groupKey = group.name;
+                        if (groupKey === 'Service' || groupKey === 'ServiceContract') {
+                            groupKey = 'Service|ServiceContract';
+                        }
+                        if (groupKey === 'RouteRule' || groupKey === 'RateLimitRule' || groupKey === 'CircuitBreakerRule' || groupKey === 'FaultDetectRule') {
+                            groupKey = 'RouteRule|RateLimitRule|CircuitBreakerRule|FaultDetectRule';
+                        }
+                        if (groupKey === 'ConfigFile' || groupKey === 'ConfigRelease') {
+                            groupKey = 'ConfigFile|ConfigRelease';
+                        }
+
+                        // Initialize the group if it doesn't exist
+                        if (!result[groupKey]) {
+                            result[groupKey] = {
+                                group: groupKey,
+                                functions: []
+                            };
+                        }
+
+                        // Add function to its group
+                        if (!result[groupKey].functions.includes(f)) {
+                            result[groupKey].functions.push(f);
+                        }
+                    }
+                }
+            }
+            return result;
+        }, {}) || {}
+    }
+
+    async function loadCurRule(functionOptions: ServerFunctionGroup[]) {
+        try {
+            // 查询当前鉴权策略的详细数据
+            const ret = await describeAuthPolicyDetail({ id: currentPolicy.id as string });
+            if (ret.strategy) {
+                console.log("loadCurRule", ret.strategy);
+                const { name, action, comment, principals, resources, functions, metadata } = ret.strategy;
+                const selectFuncs: { [key: string]: { group: string; functions: string[] } } = transferFunctions(functions || [], functionOptions);
+
+                setState(prev => ({
+                    ...prev,
+                    selectPrincipals: {
+                        ...prev.selectPrincipals,
+                        User: {
+                            all: principals?.users?.length === 1 && principals?.users?.[0].id === '*',
+                            ids: principals?.users?.map((item: any) => item.id) || []
+                        },
+                        UserGroup: {
+                            all: principals?.groups?.length === 1 && principals?.groups?.[0].id === '*',
+                            ids: principals?.groups?.map((item: any) => item.id) || []
+                        },
+                        Role: {
+                            all: principals?.roles?.length === 1 && principals?.roles?.[0].id === '*',
+                            ids: principals?.roles?.map((item: any) => item.id) || []
+                        },
+                    },
+                    selectFunctions: selectFuncs,
+                    selectResources: {
+                        ...prev.selectResources,
+                        Namespace: {
+                            all: resources?.namespaces?.length === 1 && resources?.namespaces?.[0].id === '*',
+                            ids: resources?.namespaces?.map((item: any) => item.id) || []
+                        },
+                        Service: {
+                            all: resources?.services?.length === 1 && resources?.services?.[0].id === '*',
+                            ids: resources?.services?.map((item: any) => item.id) || []
+                        },
+                        ConfigGroup: {
+                            all: resources?.config_groups?.length === 1 && resources?.config_groups?.[0].id === '*',
+                            ids: resources?.config_groups?.map((item: any) => item.id) || []
+                        },
+                        User: {
+                            all: resources?.users?.length === 1 && resources?.users?.[0].id === '*',
+                            ids: resources?.users?.map((item: any) => item.id) || []
+                        },
+                        UserGroup: {
+                            all: resources?.user_groups?.length === 1 && resources?.user_groups?.[0].id === '*',
+                            ids: resources?.user_groups?.map((item: any) => item.id) || []
+                        },
+                        Role: {
+                            all: resources?.roles?.length === 1 && resources?.roles?.[0].id === '*',
+                            ids: resources?.roles?.map((item: any) => item.id) || []
+                        },
+                        RouteRule: {
+                            all: resources?.route_rules?.length === 1 && resources?.route_rules?.[0].id === '*',
+                            ids: resources?.route_rules?.map((item: any) => item.id) || []
+                        },
+                        RateLimitRule: {
+                            all: resources?.ratelimit_rules?.length === 1 && resources?.ratelimit_rules?.[0].id === '*',
+                            ids: resources?.ratelimit_rules?.map((item: any) => item.id) || []
+                        },
+                        CircuitBreakerRule: {
+                            all: resources?.circuitbreaker_rules?.length === 1 && resources?.circuitbreaker_rules?.[0].id === '*',
+                            ids: resources?.circuitbreaker_rules?.map((item: any) => item.id) || []
+                        },
+                        FaultDetectRule: {
+                            all: resources?.faultdetect_rules?.length === 1 && resources?.faultdetect_rules?.[0].id === '*',
+                            ids: resources?.faultdetect_rules?.map((item: any) => item.id) || []
+                        },
+                    }
+                }));
+                form.setFieldsValue({
+                    name: name,
+                    action: (action || '').toUpperCase(),
+                    comment: comment,
+                    policy_labels: metadata ? Object.entries(metadata).map(([key, value]) => ({ key, value })) : [],
+                });
+            }
+        } catch (err) {
+            console.error(err);
+        }
+        console.log(state.selectFunctions);
+    }
+
     // 表单初始化（支持create/edit/view）
     React.useEffect(() => {
         if (!visible) return;
-        loadOptions();
-        if ((op === 'edit' || op === 'view') && currentPolicy) {
-            form.setFieldsValue({
-                name: currentPolicy.name,
-                action: (currentPolicy.action || '').toUpperCase(),
-                comment: currentPolicy.comment,
-                users: currentPolicy.principals?.users?.map(u => u.id) || [],
-                groups: currentPolicy.principals?.groups?.map(g => g.id) || [],
-                roles: currentPolicy.principals?.roles?.map(r => r.id) || [],
-                functions: currentPolicy.functions || [],
-                policy_labels: currentPolicy.metadata ? Object.entries(currentPolicy.metadata).map(([key, value]) => ({ key, value })) : [],
-            });
-        }
+        loadOptions()
     }, [visible, currentPolicy, op]);
 
     const filterFunctionOptions = (keyword: string, funcGroup: ServerFunctionGroup[]): ServerFunction[] => {
@@ -271,14 +447,12 @@ const PolicyEditor: React.FC<IPolicyEditorProps> = ({ visible, op, closeDrawer }
     const handleStepChange = async (nextStep: number) => {
         // 保存当前表单数据
         if (state.step === 1) {
-            const values = await form.getFieldsValue(true);
-            console.log("save", values);
+            const values = form.getFieldsValue(true);
             setState(prev => ({ ...prev, formValues: values, step: nextStep }));
         } else if (nextStep === 1) {
-            console.log("restore", state.formValues);
             // 恢复表单数据
             form.setFieldsValue(state.formValues);
-            setState(prev => ({ ...prev, step: nextStep, version: uuidv4() }));
+            setState(prev => ({ ...prev, step: nextStep }));
         } else {
             // 其他步骤直接切换
             setState(prev => ({ ...prev, step: nextStep }));
@@ -342,6 +516,9 @@ const PolicyEditor: React.FC<IPolicyEditorProps> = ({ visible, op, closeDrawer }
         }
     };
 
+    const maxStep = currentPolicy.default_strategy ? 3 : 4;
+    const stepInfo = currentPolicy.default_strategy ? defaultStepNext : customStepNext;
+
     return (
         <Drawer
             visible={visible}
@@ -358,12 +535,12 @@ const PolicyEditor: React.FC<IPolicyEditorProps> = ({ visible, op, closeDrawer }
                             上一步
                         </Button>
                     )}
-                    {state.step < 4 && (
+                    {state.step < maxStep && (
                         <Button theme="default" onClick={() => handleStepChange(state.step + 1)}>
                             下一步
                         </Button>
                     )}
-                    {state.step === 4 && (
+                    {state.step === maxStep && (
                         <>
                             <Button
                                 theme="primary"
@@ -378,13 +555,23 @@ const PolicyEditor: React.FC<IPolicyEditorProps> = ({ visible, op, closeDrawer }
                 </Space>
             }
         >
-            <Steps current={state.step}>
-                <StepItem value={1} title="基本信息" />
-                <StepItem value={2} title="成员信息" />
-                <StepItem value={3} title="资源信息" />
-                <StepItem value={4} title="接口信息" />
-            </Steps>
-
+            {currentPolicy.default_strategy ?
+                (
+                    <Steps current={state.step}>
+                        <StepItem value={1} title="基本信息" />
+                        <StepItem value={2} title="资源信息" />
+                        <StepItem value={3} title="接口信息" />
+                    </Steps>
+                )
+                :
+                (
+                    <Steps current={state.step}>
+                        <StepItem value={1} title="基本信息" />
+                        <StepItem value={2} title="成员信息" />
+                        <StepItem value={3} title="资源信息" />
+                        <StepItem value={4} title="接口信息" />
+                    </Steps>
+                )}
             <Form
                 form={form}
                 labelWidth={120}
@@ -392,7 +579,7 @@ const PolicyEditor: React.FC<IPolicyEditorProps> = ({ visible, op, closeDrawer }
                 style={{ padding: '24px 0' }}
             >
                 {/* Step 1: Basic Information */}
-                {state.step === 1 && (
+                {stepInfo[state.step].Cur === 'base' && (
                     <>
                         <FormItem
                             label="策略名称"
@@ -408,7 +595,7 @@ const PolicyEditor: React.FC<IPolicyEditorProps> = ({ visible, op, closeDrawer }
                             initialData={currentPolicy.action === '' ? 'ALLOW' : currentPolicy.action}
                             rules={[{ required: true, message: '策略动作不能为空' }]}
                         >
-                            <RadioGroup theme='button' variant='primary-filled' disabled={op === 'view'}>
+                            <RadioGroup theme='button' variant='primary-filled' disabled={op === 'view' || currentPolicy.default_strategy}>
                                 <Radio.Button value="ALLOW">允许</Radio.Button>
                                 <Radio.Button value="DENY">拒绝</Radio.Button>
                             </RadioGroup>
@@ -431,7 +618,8 @@ const PolicyEditor: React.FC<IPolicyEditorProps> = ({ visible, op, closeDrawer }
                 )}
 
                 {/* Step 2: Member Information */}
-                {state.step === 2 && (
+                {/* 默认策略不能修改默认成员数据信息 */}
+                {stepInfo[state.step].Cur === 'principal' && (
                     <>
                         <Space>
                             <div className={style.treeContent}>
@@ -505,7 +693,7 @@ const PolicyEditor: React.FC<IPolicyEditorProps> = ({ visible, op, closeDrawer }
                     </>
                 )}
                 {/* Step 3: Resource Information */}
-                {state.step === 3 && (
+                {stepInfo[state.step].Cur === 'resource' && (
                     <>
                         <Space>
                             <div className={style.treeContent}>
@@ -583,77 +771,126 @@ const PolicyEditor: React.FC<IPolicyEditorProps> = ({ visible, op, closeDrawer }
                         </Space>
                     </>
                 )}
-                {state.step === 4 && (
+                {/* 需要支持高级参数填写，走 TagSelect 用户可自行填写 */}
+                {stepInfo[state.step].Cur === 'interface' && (
                     <>
-                        <Row>
-                            <RadioGroup
-                                theme='button'
-                                variant='primary-filled'
-                                value={state.useAllFunc ? 'all' : 'custom'}
-                                onChange={(value) => {
-                                    setState(prev => ({
-                                        ...prev,
-                                        useAllFunc: value === 'all',
-                                    }));
-                                }}
-                            >
-                                <Radio.Button value="custom">部分（自定义）</Radio.Button>
-                                <Radio.Button value="all">全部（包括新增）</Radio.Button>
-                            </RadioGroup>
-                        </Row>
-                        {!state.useAllFunc && (
-                            <Row>
-                                <Space style={{ marginTop: 20 }}>
-                                    <div className={style.treeContent}>
-                                        <Tree
-                                            data={serverFunctionTree}
-                                            activable
-                                            hover
-                                            lazy
-                                            transition
-                                            valueMode={"onlyLeaf"}
-                                            defaultActived={[state.activeFuncNode]}
-                                            actived={[state.activeFuncNode]}
-                                            onClick={({ node }) => handleTreeNodeClick("function", node.value as string)}
-                                        />
-                                    </div>
-                                    <Transfer
-                                        key={state.activeFuncNode}
-                                        search={true}
-                                        data={state.viewFunctionOptions}
-                                        value={state.selectFunctions[state.activeFuncNode]?.functions}
-                                        onChange={(target, ctx) => {
-                                            const newSelectFunctions = { ...state.selectFunctions };
-                                            if (!newSelectFunctions[state.activeFuncNode]) {
-                                                newSelectFunctions[state.activeFuncNode] = { group: state.activeFuncNode, functions: [] };
-                                            }
-                                            const oldFunctions = newSelectFunctions[state.activeFuncNode].functions;
-                                            switch (ctx.type) {
-                                                case 'source':
-                                                    setState(prev => {
-                                                        const newFunctions = target as string[];
-                                                        const addedFunctions = newFunctions.filter(fn => !oldFunctions.includes(fn));
-                                                        if (addedFunctions.length > 0) {
-                                                            newSelectFunctions[prev.activeFuncNode].functions.push(...addedFunctions);
-                                                        }
-                                                        return { ...prev, selectFunctions: newSelectFunctions };
-                                                    })
-                                                    break;
-                                                case 'target':
-                                                    setState(prev => {
-                                                        const removedFunctions = target as string[];
-                                                        const finalFunctions = oldFunctions.filter(fn => !removedFunctions.includes(fn));
-                                                        if (removedFunctions.length > 0) {
-                                                            newSelectFunctions[prev.activeFuncNode].functions = finalFunctions;
-                                                        }
-                                                        return { ...prev, selectFunctions: newSelectFunctions };
-                                                    })
-                                                    break;
-                                            }
+                        <Row style={{ marginBottom: 10 }}>
+                            <Col span={10}>
+                                {!state.swithCustomFunc && (
+                                    <RadioGroup
+                                        theme='button'
+                                        variant='primary-filled'
+                                        value={state.useAllFunc ? 'all' : 'custom'}
+                                        onChange={(value) => {
+                                            setState(prev => ({
+                                                ...prev,
+                                                useAllFunc: value === 'all',
+                                            }));
                                         }}
-                                    />
-                                </Space>
-                            </Row>
+                                    >
+                                        <Radio.Button value="custom">部分（自定义）</Radio.Button>
+                                        <Radio.Button value="all">全部（包括新增）</Radio.Button>
+                                    </RadioGroup>
+                                )}
+                            </Col>
+                            <Col span={2}>
+                                <Switch
+                                    defaultValue
+                                    label={['可视化选择', '文本模式']}
+                                    onChange={(value) => {
+                                        setState(prev => ({
+                                            ...prev,
+                                            swithCustomFunc: !value,
+                                        }));
+                                    }}
+                                />
+                            </Col>
+                        </Row>
+                        {state.swithCustomFunc ? (
+                            <Space style={{ width: '100%' }} direction='vertical'>
+                                <Select
+                                    filterable={true}
+                                    creatable={true}
+                                    multiple={true}
+                                    options={state.functionOptions.reduce((acc: { value: string; label: string }[], group) => {
+                                        acc.push(...group.functions.map(item => ({
+                                            value: item,
+                                            label: getServerFunctionDesc(group.name, item),
+                                        })));
+                                        return acc;
+                                    }, [])}
+                                    onChange={(value) => {
+                                        setState(prev => ({
+                                            ...prev,
+                                            customFunctions: value as string[],
+                                        }));
+                                    }}
+                                />
+                                {/* 预览框 */}
+                                <Textarea
+                                    // style={{marginTop: 10}} 
+                                    readOnly={true}
+                                    value={JSON.stringify(state.customFunctions, null, 2)}
+                                    rows={20}
+                                />
+                            </Space>
+                        ) : (
+                            <>
+                                {!state.useAllFunc && (
+                                    <Row>
+                                        <Space style={{ marginTop: 20 }}>
+                                            <div className={style.treeContent}>
+                                                <Tree
+                                                    data={serverFunctionTree}
+                                                    activable
+                                                    hover
+                                                    lazy
+                                                    transition
+                                                    valueMode={"onlyLeaf"}
+                                                    defaultActived={[state.activeFuncNode]}
+                                                    actived={[state.activeFuncNode]}
+                                                    onClick={({ node }) => handleTreeNodeClick("function", node.value as string)}
+                                                />
+                                            </div>
+                                            <Transfer
+                                                key={state.activeFuncNode}
+                                                search={true}
+                                                data={state.viewFunctionOptions}
+                                                value={state.selectFunctions[state.activeFuncNode]?.functions}
+                                                onChange={(target, ctx) => {
+                                                    const newSelectFunctions = { ...state.selectFunctions };
+                                                    if (!newSelectFunctions[state.activeFuncNode]) {
+                                                        newSelectFunctions[state.activeFuncNode] = { group: state.activeFuncNode, functions: [] };
+                                                    }
+                                                    const oldFunctions = newSelectFunctions[state.activeFuncNode].functions;
+                                                    switch (ctx.type) {
+                                                        case 'source':
+                                                            setState(prev => {
+                                                                const newFunctions = target as string[];
+                                                                const addedFunctions = newFunctions.filter(fn => !oldFunctions.includes(fn));
+                                                                if (addedFunctions.length > 0) {
+                                                                    newSelectFunctions[prev.activeFuncNode].functions.push(...addedFunctions);
+                                                                }
+                                                                return { ...prev, selectFunctions: newSelectFunctions };
+                                                            })
+                                                            break;
+                                                        case 'target':
+                                                            setState(prev => {
+                                                                const removedFunctions = target as string[];
+                                                                const finalFunctions = oldFunctions.filter(fn => !removedFunctions.includes(fn));
+                                                                if (removedFunctions.length > 0) {
+                                                                    newSelectFunctions[prev.activeFuncNode].functions = finalFunctions;
+                                                                }
+                                                                return { ...prev, selectFunctions: newSelectFunctions };
+                                                            })
+                                                            break;
+                                                    }
+                                                }}
+                                            />
+                                        </Space>
+                                    </Row>
+                                )}
+                            </>
                         )}
                     </>
                 )}

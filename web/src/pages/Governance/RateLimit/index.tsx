@@ -1,9 +1,37 @@
-import React, { memo, useRef } from 'react';
-import ErrorPage, { ECode } from 'components/ErrorPage';
+import React, { } from 'react';
+import { Tabs } from 'tdesign-react';
+import TabPanel from 'tdesign-react/es/tabs/TabPanel';
 
+export default React.memo(() => {
 
-export default memo(() => {
-  return (
-    <ErrorPage code={ECode.unimplemented} />
-  );
+    return (
+        <>
+            <Tabs>
+                <TabPanel label="单机" value="1">
+                    <div
+                        style={{
+                            margin: 20
+                        }}
+                    >
+                    </div>
+                </TabPanel>
+                <TabPanel label="分布式" value="2">
+                    <div
+                        style={{
+                            margin: 20
+                        }}
+                    >
+                    </div>
+                </TabPanel>
+                <TabPanel label="限流集群" value="3">
+                    <div
+                        style={{
+                            margin: 20
+                        }}
+                    >
+                    </div>
+                </TabPanel>
+            </Tabs>
+        </>
+    )
 });

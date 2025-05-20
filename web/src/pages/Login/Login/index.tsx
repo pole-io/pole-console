@@ -31,7 +31,7 @@ export default function Login() {
       openErrNotification('请求错误', result?.payload as string);
     } else {
       MessagePlugin.success('登录成功');
-      navigate('/dashboard');
+      navigate('/namespace');
     }
   };
 
